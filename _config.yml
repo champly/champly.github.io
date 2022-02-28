@@ -107,3 +107,11 @@ deploy:
   branch: main
   name: champly
   email: champly@outlook.com
+
+# Search
+## See: https://github.com/theme-next/hexo-generator-searchdb
+search:
+  path: search.json
+  field: post
+  content: true
+  format: striptags
