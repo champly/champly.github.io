@@ -44,6 +44,7 @@ jobs:
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan github.com >> ~/.ssh/known_hosts
         cp _config.theme.yml themes/keep/_config.yml
+        cp images/* themes/keep/images/
     - name: Deploy hexo
       run: |
         npm run deploy
