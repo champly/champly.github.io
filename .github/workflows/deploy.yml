@@ -36,11 +36,11 @@ jobs:
         npm install
     - name: Set up environment
       env:
-        CI: ${{ secrets.CI }}
+        DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
       run: |
         sudo timedatectl set-timezone "Asia/Shanghai"
         mkdir -p ~/.ssh
-        echo "$CI" > ~/.ssh/id_rsa
+        echo "$DEPLOY_KEY" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan github.com >> ~/.ssh/known_hosts
         cp _config.theme.yml themes/keep/_config.yml
