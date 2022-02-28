@@ -102,4 +102,8 @@ theme: keep
 # Deployment
 ## Docs: https://hexo.io/docs/one-command-deployment
 deploy:
-  type: ''
+  type: 'git'
+  repo: "git@github.com:champly/champly.github.io.git"
+  branch: main
+  name: champly
+  email: champly@outlook.com

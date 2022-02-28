@@ -43,8 +43,6 @@ jobs:
         echo "$CI" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan github.com >> ~/.ssh/known_hosts
-        git config --global user.name champly
-        git config --global user.email champly@outlook.com
         cp _config.theme.yml themes/keep/_config.yml
     - name: Deploy hexo
       run: |
