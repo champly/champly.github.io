@@ -7,7 +7,7 @@ base_info:
   author: champly
   url: https://champly.github.io
   # Logo image (You can use local image, image external link or don’t fill)
-  logo_img:
+  logo_img: /images/logo.jpeg
 
 # ---------------------------------------------------------------------------------------
 # Theme style settings
