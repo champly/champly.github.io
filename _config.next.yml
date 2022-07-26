@@ -63,7 +63,7 @@ custom_logo:
 # See: https://creativecommons.org/about/cclicenses/
 creative_commons:
   # Available values: by | by-nc | by-nc-nd | by-nc-sa | by-nd | by-sa | cc-zero
-  license: by-nc-sa
+  license: cc-zero
   # Available values: big | small
   size: small
   sidebar: true
@@ -619,11 +619,11 @@ livere_uid: # <your_uid>
 # Gitalk
 # For more information: https://gitalk.github.io
 gitalk:
-  enable: false
-  github_id: # GitHub repo owner
-  repo: # Repository name to store issues
-  client_id: # GitHub Application Client ID
-  client_secret: # GitHub Application Client Secret
+  enable: true
+  github_id: champly # GitHub repo owner
+  repo: champly.github.io # Repository name to store issues
+  client_id: e73bf3d8d8c7947be9c2 # GitHub Application Client ID
+  client_secret: 25256fb151149009db7add5031c73f39a85f608c # GitHub Application Client Secret
   admin_user: # GitHub repo owner and collaborators, only these guys can initialize gitHub issues
   distraction_free_mode: true # Facebook-like distraction free mode
   # When the official proxy is not available, you can change it to your own proxy address
