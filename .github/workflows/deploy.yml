@@ -22,9 +22,12 @@ jobs:
     - name: Checkout theme repo
       uses: actions/checkout@v2
       with:
-        repository: XPoet/hexo-theme-keep
+        # repository: XPoet/hexo-theme-keep
+        # ref: master
+        # path: themes/keep
+        repository: next-theme/hexo-theme-next
         ref: master
-        path: themes/keep
+        path: themes/next
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v2
       with:
@@ -43,8 +46,10 @@ jobs:
         echo "$DEPLOY_KEY" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan github.com >> ~/.ssh/known_hosts
-        cp _config.theme.yml themes/keep/_config.yml
-        cp images/* themes/keep/source/images/
+        # cp _config.theme.yml themes/keep/_config.yml
+        # cp images/* themes/keep/source/images/
+        cp _config.next.yml themes/next/_config.yml
+        cp images/* themes/next/source/images/
     - name: Deploy hexo
       run: |
         npm run deploy
