@@ -366,16 +366,17 @@ codeblock:
   # Code Highlight theme
   # All available themes: https://theme-next.js.org/highlight/
   theme:
-    light: default
+    # light: default
+    light: base16/atelier-heath-light
     dark: stackoverflow-dark
   prism:
     light: prism
     dark: prism-dark
   # Add copy button on codeblock
   copy_button:
-    enable: false
+    enable: true
     # Available values: default | flat | mac
-    style:
+    style: flat
 
 back2top:
   enable: true
@@ -427,7 +428,7 @@ font:
   enable: true
 
   # Uri of fonts host, e.g. https://fonts.googleapis.com (Default).
-  host: https://fonts.google.com
+  # host: https://fonts.google.com
   # host: https://www.googlefonts.cn
 
   # Font options:
@@ -437,31 +438,31 @@ font:
 
   # Global font settings used for all elements inside <body>.
   global:
-    external: true
+    external: false
     # family: Lato
     family: Source Code Pro
     size: 0.9
 
   # Font settings for site title (.site-title).
   title:
-    external: true
+    external: false
     family: Source Code Pro
     size:
 
   # Font settings for headlines (<h1> to <h6>).
   headings:
-    external: true
+    external: false
     family: Source Code Pro
     size:
 
   # Font settings for posts (.post-body).
   posts:
-    external: true
+    external: false
     family: Source Code Pro
 
   # Font settings for <code> and code blocks.
   codes:
-    external: true
+    external: false
     family: Source Code Pro
     size: 0.6
 
