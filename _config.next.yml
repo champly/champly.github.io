@@ -356,8 +356,10 @@ mobile_layout_economy: false
 
 # Browser header panel color.
 theme_color:
-  # light: "#222"
-  light: "orange"
+  # light: "#FFDE02"
+  light: "#02B1E0"
+  # light: "#FC6423"
+  # light: "orange"
   dark: "#222"
 
 # Override browsers' default behavior.
@@ -445,7 +447,7 @@ font:
   global:
     external: false
     family: Source Code Pro
-    size: 0.9
+    size: 0.95
 
   # Font settings for site title (.site-title).
   title:
@@ -468,7 +470,6 @@ font:
   codes:
     external: false
     family: Source Code Pro
-    size: 0.5
 
 
 # ---------------------------------------------------------------
