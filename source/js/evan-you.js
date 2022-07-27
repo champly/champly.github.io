@@ -39,7 +39,9 @@ if (document.getElementById('evanyou')) {
 		var t = p + (z() * 2 - 1.1) * f
 		return (t > h || t < 0) ? y(p) : t
 	}
-	document.onclick = evanyou
+	// 鼠标点击变化
+	// document.onclick = evanyou
+	setInterval("evanyou()", 30*1000)
 	document.ontouchstart = evanyou
 	evanyou()
 }
