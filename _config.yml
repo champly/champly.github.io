@@ -3,13 +3,13 @@
 ## Source: https://github.com/hexojs/hexo/
 
 # Site
-title: champly
-subtitle: ''
-description: ''
+title: "champly"
+subtitle: "To be or not to be is up to you"
+description: ""
 keywords:
 author: champly
-language: zh-CN
-timezone: ''
+language: en
+timezone: "Asia/Shanghai"
 
 # URL
 ## Set your site url here. For example, if you use GitHub Page, set url as 'https://username.github.io/project'
@@ -120,3 +120,11 @@ feed:
   type: atom
   path: atom.xml
   limit: 20
+
+tag_cloud:
+  textFont: Source Code Pro
+  textColor: "#333"
+  textHeight: 25
+  outlineColor: '#E2E1D1'
+  maxSpeed: 0.2
+  pauseOnSelected: true # true 意味着当选中对应 tag 时,停止转动

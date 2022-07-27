@@ -1,5 +1,10 @@
 ---
 title: 使用 HEXO 构建 github 博客
+date: 2022-02-28 09:09:09
+categories: blog
+tags:
+  - hexo
+  - next
 ---
 
 如何使用 [Hexo](https://hexo.io/zh-cn/) 构建一个博客，并且使用 [github pages](https://pages.github.com/) 来展示
