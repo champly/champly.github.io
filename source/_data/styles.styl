@@ -20,11 +20,6 @@
 	background: rgba(255,255,255,0.5) none repeat scroll !important;
 }
 
-// 副标题字体颜色
-.site-subtitle {
-	color: white;
-}
-
 // 搜索框（local-search）的透明度设置
 .popup {
 	opacity: 1.0;
@@ -33,4 +28,47 @@
 // 评论区
 .comments {
 	background: rgba(255,255,255,0.9);
+}
+
+
+// ###### 颜色 ######
+
+
+// 标题颜色
+.site-title {
+	color: white;
+}
+
+// 副标题字体颜色
+.site-subtitle {
+	color: white;
+}
+
+// 主页文章添加阴影效果
+.post {
+   padding: 20px;
+   -webkit-box-shadow: 0 0 5px rgba(120, 128, 114, 1.5);
+   -moz-box-shadow: 0 0 5px rgba(202, 203, 204, .5);
+}
+
+// 自定义回到顶部样式
+.back-to-top {
+	right: 60px;
+	width: 70px;  //图片素材宽度
+	height: 900px;  //图片素材高度
+	top: -900px;
+	bottom: unset;
+	transition: all .5s ease-in-out;
+	background: url("/images/scroll.png");
+	opacity: 1.0;
+
+	//隐藏箭头图标
+	> i {
+		display: none;
+	}
+
+	&.back-to-top-on {
+	bottom: unset;
+		top: 100vh < (900px + 200px) ? calc( 100vh - 900px - 200px ) : 0px;
+	}
 }

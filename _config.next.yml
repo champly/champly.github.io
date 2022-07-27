@@ -31,7 +31,8 @@ custom_file_path:
   #style: source/_data/styles.styl
 
   sidebar: source/_data/sidebar.njk
-  footer: source/_data/footer.swig
+  bodyEnd: source/_data/body-end.njk
+  variable: source/_data/variables.styl
   style: source/_data/styles.styl
 
 
@@ -356,9 +357,9 @@ mobile_layout_economy: false
 
 # Browser header panel color.
 theme_color:
-  # light: "#FFDE02"
-  light: "#02B1E0"
-  # light: "#FC6423"
+  # light: "#ffde02"
+  light: "#02b1e0"
+  # light: "#fc6423"
   # light: "orange"
   dark: "#222"
 
@@ -383,12 +384,12 @@ codeblock:
   copy_button:
     enable: true
     # Available values: default | flat | mac
-    style: flat
+    style: mac
 
 back2top:
   enable: true
   # Back to top in sidebar.
-  sidebar: true
+  sidebar: false
   # Scroll percent label in b2t button.
   scrollpercent: true
 
@@ -398,10 +399,10 @@ reading_progress:
   # Available values: left | right
   start_at: left
   # Available values: top | bottom
-  position: bottom
+  position: top
   reversed: false
-  color: "gray"
-  height: 3px
+  color: "#02B1E0"
+  height: 5px
 
 # Bookmark Support
 bookmark:
@@ -447,7 +448,7 @@ font:
   global:
     external: false
     family: Source Code Pro
-    size: 0.95
+    size: 0.96
 
   # Font settings for site title (.site-title).
   title:
@@ -536,7 +537,7 @@ pjax: false
 
 # FancyBox is a tool that offers a nice and elegant way to add zooming functionality for images.
 # For more information: https://fancyapps.com/fancybox/
-fancybox: false
+fancybox: true
 
 # A JavaScript library for zooming images like Medium.
 # Warning: Do not enable both `fancybox` and `mediumzoom`.
@@ -876,7 +877,7 @@ pace:
 # Canvas ribbon
 # For more information: https://github.com/hustcc/ribbon.js
 canvas_ribbon:
-  enable: true
+  enable: false
   size: 300 # The width of the ribbon
   alpha: 0.6 # The transparency of the ribbon
   zIndex: -1 # The display level of the ribbon
@@ -908,3 +909,10 @@ vendors:
 css: css
 js: js
 images: images
+
+# external JavaScript
+# colorful trilateral riband background
+evanyou: true
+# mouse click effect: fireworks | explosion | love | text
+cursor_effect: text
+
