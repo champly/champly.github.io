@@ -448,6 +448,13 @@
   dependencies:
     "webidl-conversions" "^7.0.0"
 
+"domhandler@^3.0.0":
+  "integrity" "sha512-J1C5rIANUbuYK+FuFL98650rihynUOEzRLxW+90bKZRWB6A1X1Tf82GxR1qAWLyfNPRvjqfip3Q5tdYlmAa9lA=="
+  "resolved" "https://registry.npmmirror.com/domhandler/-/domhandler-3.3.0.tgz"
+  "version" "3.3.0"
+  dependencies:
+    "domelementtype" "^2.0.1"
+
 "domhandler@^4.2.0", "domhandler@^4.2.2":
   "integrity" "sha512-fC0aXNQXqKSFTr2wDNZDhsEYjCiYsDWl3D01kwt25hm1YIPyDGHvvi3rw+PLqHAl/m71MaiF7d5zvBr0p5UB2g=="
   "resolved" "https://registry.npmmirror.com/domhandler/-/domhandler-4.3.0.tgz"
@@ -460,7 +467,7 @@
   "resolved" "https://registry.npmmirror.com/dompurify/-/dompurify-2.3.6.tgz"
   "version" "2.3.6"
 
-"domutils@^2.8.0":
+"domutils@^2.0.0", "domutils@^2.8.0":
   "integrity" "sha512-w96Cjofp72M5IIhpjgobBimYEfoPjx1Vx0BSX9P30WBdZW2WIKU0T1Bd0kz2eNZ9ikjKgHbEyKx8BB6H1L3h3A=="
   "resolved" "https://registry.npmmirror.com/domutils/-/domutils-2.8.0.tgz"
   "version" "2.8.0"
@@ -825,6 +832,28 @@
     "prismjs" "^1.17.1"
     "strip-indent" "^3.0.0"
 
+"hexo-util@2.4.0":
+  "integrity" "sha512-IPQvAyn0cznYMU2gskMiZ6LZEvN7wHNusrJoYxrir4f7S7POpZeDTBswiko9R1qqd+/hu07wUYZdm4ceTTCEaA=="
+  "resolved" "https://registry.npmmirror.com/hexo-util/-/hexo-util-2.4.0.tgz"
+  "version" "2.4.0"
+  dependencies:
+    "bluebird" "^3.5.2"
+    "camel-case" "^4.0.0"
+    "cross-spawn" "^7.0.0"
+    "deepmerge" "^4.2.2"
+    "highlight.js" "^10.0.0"
+    "htmlparser2" "^4.0.0"
+    "prismjs" "^1.17.1"
+    "strip-indent" "^3.0.0"
+    "striptags" "^3.1.1"
+
+"hexo-word-counter@^0.0.3":
+  "integrity" "sha512-VImhZ9m2RFoGDwKCkfNodogHgGmN7JLa1OZQ/N9gW0SpZDyOwP4jKAlWplzbAVdwK/CF3VQfKEeDzfsTbjcKTQ=="
+  "resolved" "https://registry.npmmirror.com/hexo-word-counter/-/hexo-word-counter-0.0.3.tgz"
+  "version" "0.0.3"
+  dependencies:
+    "hexo-util" "2.4.0"
+
 "hexo-wordcount@^6.0.1":
   "integrity" "sha512-tbo2P9xRWEKQmRf7+XuPjx9It1MnaE26nA+EEb2DN39gK1x+26W7Nm4Iyp4AugQjBWYYDx7OLn4gp1WFxQpQew=="
   "resolved" "https://registry.npmmirror.com/hexo-wordcount/-/hexo-wordcount-6.0.1.tgz"
@@ -859,6 +888,11 @@
     "titlecase" "^1.1.2"
     "warehouse" "^4.0.0"
 
+"highlight.js@^10.0.0":
+  "integrity" "sha512-tzcUFauisWKNHaRkN4Wjl/ZA07gENAjFl3J/c480dprkGTg5EQstgaNFqBfUqCq54kZRIEcreTsAgF/m2quD7A=="
+  "resolved" "https://registry.npmmirror.com/highlight.js/-/highlight.js-10.7.3.tgz"
+  "version" "10.7.3"
+
 "highlight.js@^11.0.1":
   "integrity" "sha512-nawlpCBCSASs7EdvZOYOYVkJpGmAOKMYZgZtUqSRqodZE0GRVcFKwo1RcpeOemqh9hyttTdd5wDBwHkuSyUfnA=="
   "resolved" "https://registry.npmmirror.com/highlight.js/-/highlight.js-11.4.0.tgz"
@@ -870,6 +904,16 @@
   "version" "3.0.0"
   dependencies:
     "whatwg-encoding" "^2.0.0"
+
+"htmlparser2@^4.0.0":
+  "integrity" "sha512-4zDq1a1zhE4gQso/c5LP1OtrhYTncXNSpvJYtWJBtXAETPlMfi3IFNjGuQbYLuVY4ZR0QMqRVvo4Pdy9KLyP8Q=="
+  "resolved" "https://registry.npmmirror.com/htmlparser2/-/htmlparser2-4.1.0.tgz"
+  "version" "4.1.0"
+  dependencies:
+    "domelementtype" "^2.0.1"
+    "domhandler" "^3.0.0"
+    "domutils" "^2.0.0"
+    "entities" "^2.0.0"
 
 "htmlparser2@^7.0.0":
   "integrity" "sha512-H7MImA4MS6cw7nbyURtLPO1Tms7C5H602LRETv95z1MxO/7CP7rDVROehUYeYBUYEON94NXXDEPmZuq+hX4sog=="
@@ -1515,6 +1559,11 @@
   "version" "3.0.0"
   dependencies:
     "min-indent" "^1.0.0"
+
+"striptags@^3.1.1":
+  "integrity" "sha512-g45ZOGzHDMe2bdYMdIvdAfCQkCTDMGBazSw1ypMowwGIee7ZQ5dU0rBJ8Jqgl+jAKIv4dbeE1jscZq9wid1Tkw=="
+  "resolved" "https://registry.npmmirror.com/striptags/-/striptags-3.2.0.tgz"
+  "version" "3.2.0"
 
 "stylus@^0.54.8":
   "integrity" "sha512-vr54Or4BZ7pJafo2mpf0ZcwA74rpuYCZbxrHBsH8kbcXOwSfvBFwsRfpGO5OD5fhG5HDCFW737PKaawI7OqEAg=="

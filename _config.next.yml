@@ -67,7 +67,7 @@ creative_commons:
   # Available values: big | small
   size: small
   sidebar: true
-  post: true
+  post: false
   # You can set a language value if you prefer a translated version of CC license, e.g. deed.zh
   # CC licenses are available in 39 languages, you can find the specific and correct abbreviation you need on https://creativecommons.org
   language:
@@ -155,8 +155,8 @@ site_state: true
 # Key is the link label showing to end users.
 # Value before `||` delimiter is the target permalink, value after `||` delimiter is the name of Font Awesome icon.
 social:
-  #GitHub: https://github.com/yourname || fab fa-github
-  #E-Mail: mailto:yourname@gmail.com || fa fa-envelope
+  GitHub: https://github.com/champly || fab fa-github
+  # E-Mail: mailto:yourname@gmail.com || fa fa-envelope
   #Weibo: https://weibo.com/yourname || fab fa-weibo
   #Google: https://plus.google.com/yourname || fab fa-google
   #Twitter: https://twitter.com/yourname || fab fa-twitter
@@ -168,7 +168,7 @@ social:
 
 social_icons:
   enable: true
-  icons_only: false
+  icons_only: true
   transition: false
 
 # Blog rolls
@@ -201,7 +201,7 @@ toc:
 # ---------------------------------------------------------------
 
 # Show multilingual switcher in footer.
-language_switcher: true
+language_switcher: false
 
 footer:
   # Specify the year when the site was setup. If not defined, current year will be used.
@@ -212,7 +212,7 @@ footer:
     # Icon name in Font Awesome. See: https://fontawesome.com/icons
     name: fa fa-heart
     # If you want to animate the icon, set it to true.
-    animated: false
+    animated: true
     # Change the color of icon, using Hex Code.
     color: "#ff0000"
 
@@ -259,10 +259,10 @@ post_meta:
 # Dependencies: https://github.com/next-theme/hexo-word-counter
 symbols_count_time:
   separated_meta: true
-  item_text_total: false
+  item_text_total: true
 
 # Use icon instead of the symbol # to indicate the tag at the bottom of the post
-tag_icon: false
+tag_icon: true
 
 # Donate (Sponsor) settings
 # Front-matter variable (nonsupport animation).
@@ -339,7 +339,7 @@ calendar:
 
 # Preconnect CDN for fonts and plugins.
 # For more information: https://www.w3.org/TR/resource-hints/#preconnect
-preconnect: false
+preconnect: true
 
 # Set the text alignment in posts / pages.
 text_align:
@@ -386,13 +386,13 @@ back2top:
 
 # Reading progress bar
 reading_progress:
-  enable: false
+  enable: true
   # Available values: left | right
   start_at: left
   # Available values: top | bottom
-  position: top
+  position: bottom
   reversed: false
-  color: "#37c6c0"
+  color: "gray"
   height: 3px
 
 # Bookmark Support
@@ -406,8 +406,8 @@ bookmark:
 
 # `Follow me on GitHub` banner in the top-right corner.
 github_banner:
-  enable: false
-  permalink: https://github.com/yourname
+  enable: true
+  permalink: https://github.com/champly
   title: Follow me on GitHub
 
 
@@ -424,10 +424,11 @@ github_banner:
 # ---------------------------------------------------------------
 
 font:
-  enable: false
+  enable: true
 
   # Uri of fonts host, e.g. https://fonts.googleapis.com (Default).
-  host:
+  host: https://fonts.google.com
+  # host: https://www.googlefonts.cn
 
   # Font options:
   # `external: true` will load this font family from `host` above.
@@ -437,30 +438,32 @@ font:
   # Global font settings used for all elements inside <body>.
   global:
     external: true
-    family: Lato
-    size:
+    # family: Lato
+    family: Source Code Pro
+    size: 0.9
 
   # Font settings for site title (.site-title).
   title:
     external: true
-    family:
+    family: Source Code Pro
     size:
 
   # Font settings for headlines (<h1> to <h6>).
   headings:
     external: true
-    family:
+    family: Source Code Pro
     size:
 
   # Font settings for posts (.post-body).
   posts:
     external: true
-    family:
+    family: Source Code Pro
 
   # Font settings for <code> and code blocks.
   codes:
     external: true
-    family:
+    family: Source Code Pro
+    size: 0.6
 
 
 # ---------------------------------------------------------------
@@ -719,7 +722,7 @@ firestore:
 # Show Views / Visitors of the website / page with busuanzi.
 # For more information: http://ibruce.info/2015/04/04/busuanzi/
 busuanzi_count:
-  enable: false
+  enable: true
   total_visitors: true
   total_visitors_icon: fa fa-user
   total_views: true
@@ -867,7 +870,7 @@ pace:
 # Canvas ribbon
 # For more information: https://github.com/hustcc/ribbon.js
 canvas_ribbon:
-  enable: false
+  enable: true
   size: 300 # The width of the ribbon
   alpha: 0.6 # The transparency of the ribbon
   zIndex: -1 # The display level of the ribbon
