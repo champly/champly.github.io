@@ -29,6 +29,8 @@ custom_file_path:
   #variable: source/_data/variables.styl
   #mixin: source/_data/mixins.styl
   #style: source/_data/styles.styl
+  footer: source/_data/footer.swig
+  style: source/_data/styles.styl
 
 
 # ---------------------------------------------------------------
