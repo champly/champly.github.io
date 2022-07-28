@@ -128,3 +128,9 @@ tag_cloud:
   outlineColor: '#E2E1D1'
   maxSpeed: 0.2
   pauseOnSelected: true # true 意味着当选中对应 tag 时,停止转动
+
+excerpt:
+  depth: 6
+  excerpt_excludes: []
+  more_excludes: []
+  hideWholePostExcerpts: true
