@@ -11,7 +11,7 @@
   <script async src="/js/cursor/text.js"></script>
 {% endif %}
 
-{# 随机三角丝带背景 #}
+{# 鼠标点击切换随机三角丝带背景 #}
 {% if theme.evanyou %}
   <canvas id="evanyou"></canvas>
   <style>
@@ -24,5 +24,16 @@
       z-index: -1;
     }
   </style>
-  <script src="/js/evan-you.js"></script>
+  <script src="/js/bg/evan-you.js"></script>
+{% endif %}
+
+{# 自动随机三角丝带背景 #}
+{% if theme.ribbon %}
+{# <script type="text/javascript" size="150" alpha="0.6" zindex="-2" src="/js/bg/ribbon.js"></script> #}
+<style>
+	#bgCanvas {
+		background-color: rgba(255,255,255) !important;
+	}
+</style>
+<script type="text/javascript" size="150" alpha="0.6" zindex="-2" src="/js/bg/ribbon.min.js"></script>
 {% endif %}
