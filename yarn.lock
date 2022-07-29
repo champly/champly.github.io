@@ -1177,7 +1177,7 @@
     "jsdom" "^19.0.0"
     "marked" "^4.0.1"
 
-"hexo-renderer-stylus@^2.0.0":
+"hexo-renderer-stylus@^2.1.0":
   "integrity" "sha512-Nef4YCr7JX8jaRaByhzXMSsWnDed+RgJj6aU/ARnYu3Bn5xz/qRz52VJG7KqD0Xuysxa9TIBdVUgNzBrSFn3DQ=="
   "resolved" "https://registry.npmmirror.com/hexo-renderer-stylus/-/hexo-renderer-stylus-2.1.0.tgz"
   "version" "2.1.0"
@@ -1248,7 +1248,7 @@
   dependencies:
     "hexo-util" "2.4.0"
 
-"hexo@^6.0.0":
+"hexo@^6.2.0":
   "integrity" "sha512-HOpt3vUOz/T0rWTDb/CtWuBJwYARPwbpvGwsaz0RPu/l5I6AmKE+UA0lJZf14iPS3JIt/HiOcTZ3Qz22A+PE8w=="
   "resolved" "https://registry.npmmirror.com/hexo/-/hexo-6.2.0.tgz"
   "version" "6.2.0"
