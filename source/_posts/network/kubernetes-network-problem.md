@@ -73,7 +73,7 @@ raw 不常用，主要功能都在剩下的几个表里面
 
 将 `iptables` 的表和链整合起来就形成了下面的图和过程。
 
-![](/images/iptables.png)
+![iptables](/images/network/kubernetes-network-problem/iptables.png)
 
 ## `Kubernetes` 里的 `Service`
 

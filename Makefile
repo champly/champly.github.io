@@ -9,7 +9,7 @@ run: install-theme
 
 install-theme:
 	$(call download-theme,${THEME_REPO},${THEME_DIR})
-	cp images/* themes/${THEME}/source/images/
+	cp -r images/* themes/${THEME}/source/images/
 
 define download-theme
 @[ -d $(2) ] || { \

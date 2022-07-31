@@ -49,7 +49,7 @@ jobs:
         # cp _config.theme.yml themes/keep/_config.yml
         # cp images/* themes/keep/source/images/
         cp _config.next.yml themes/next/_config.yml
-        cp images/* themes/next/source/images/
+        cp -r images/* themes/next/source/images/
     - name: Deploy hexo
       run: |
         npm run deploy
