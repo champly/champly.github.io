@@ -7,7 +7,7 @@ base_info:
   author: champly
   url: https://champly.github.io
   # Logo image (You can use local image, image external link or don’t fill)
-  logo_img: /images/logo.jpeg
+  logo_img: /images/themes/logo.jpeg
 
 # ---------------------------------------------------------------------------------------
 # Theme style settings
@@ -17,10 +17,10 @@ style:
   primary_color: "#0066CC"
 
   # Avatar (You can use local image or image external link)
-  avatar: /images/logo.jpeg
+  avatar: /images/themes/logo.jpeg
 
   # Favicon (You can use local image or image external link)
-  favicon: /images/logo.jpeg
+  favicon: /images/themes/logo.jpeg
 
   # Article image align position, value: left | center
   article_img_align: left

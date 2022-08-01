@@ -111,7 +111,7 @@ static struct linux_binfmt elf_format = {
 
 可以看到最终是通过 load_elf_binary 加载的，这里就不继续深入了。
 
-### 代码创建进程
+### 创建进程
 
 使用代码来创建进程
 
@@ -193,7 +193,7 @@ root         150     117  0 09:10 pts/1    00:00:00 ps -ef
 
 可以看到 148、149 都是 process 这个进程，只不过，148 的 PPID 是 1，而 149 的 PPID 是 148（父进程）。还可以看到 1 号进程的父进程是 0 号进程，而 2 号进程的父进程也是 0 号进程。那么这里的 0,1,2 号进程是什么呢？在系统中有什么作用？
 
-### 0,1,2 号进程
+### 特殊进程
 
 0, 1, 2 号进程是 Linux 系统初始化的时候创建的三个进程，初始化的函数在 start_kernel 这里
 
@@ -522,6 +522,10 @@ int pthread_attr_setstacksize(pthread_attr_t *attr, size_t stacksize);
 ```
 
 主线程在内存中有一个栈空间，其它线程也拥有独立的栈空间。为了避免线程之间的栈空间踩踏，线程栈之间还会有一小块区域，用来隔离保护各自的栈空间。一旦另一个线程踏入到这个隔离区，就会引发段错误(SegmentFault)。
+
+线程函数调用的压栈过程：
+
+![函数调用压栈](/images/os/linux_process_and_thread/stack.jpeg)
 
 #### 全局数据
 
