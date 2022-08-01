@@ -918,5 +918,4 @@ evanyou: false
 # auto change ribbon
 ribbon: true
 # mouse click effect: fireworks | explosion | love | text
-cursor_effect: text
-
+cursor_effect: fireworks
