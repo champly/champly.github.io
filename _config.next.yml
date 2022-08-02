@@ -842,7 +842,7 @@ mermaid:
   enable: true
   # Available themes: default | dark | forest | neutral
   theme:
-    light: forest
+    light: default
     dark: dark
 
 

@@ -550,4 +550,4 @@ void *pthread_getspecific(pthread_key_t key)
 
 --------
 
-> 在 Linux 里面，无论是进程还是线程，到了内核里面，统一都叫任务（Task），由一个同一 `task_struct` 进行管理。接下来将继续学习任务的调度。
+> 在 Linux 里面，无论是进程还是线程，到了内核里面，统一都叫任务（Task），由一个统一的结构体 `task_struct` 进行管理。接下来将继续学习任务的调度。
