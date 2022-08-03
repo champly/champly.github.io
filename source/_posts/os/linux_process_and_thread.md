@@ -548,6 +548,21 @@ int pthread_setspecific(pthread_key_t key, const void *value)
 void *pthread_getspecific(pthread_key_t key)
 ```
 
+> 在 Linux 里面，无论是进程还是线程，到了内核里面，统一都叫任务（Task），由一个统一的结构体 `task_struct` 进行管理。接下来将继续学习任务的调度。
+
 --------
 
-> 在 Linux 里面，无论是进程还是线程，到了内核里面，统一都叫任务（Task），由一个统一的结构体 `task_struct` 进行管理。接下来将继续学习任务的调度。
+参考链接:
+
+- [https://mp.weixin.qq.com/s/HFQL5d-C24DKjQbYAQfl8g](https://mp.weixin.qq.com/s/HFQL5d-C24DKjQbYAQfl8g)
+- [https://mp.weixin.qq.com/s?__biz=Mzk0MjE3NDE0Ng==&mid=2247501576&idx=1&sn=657e1c89d1007a935820d394d64f4035&scene=21#wechat_redirect](https://mp.weixin.qq.com/s?__biz=Mzk0MjE3NDE0Ng==&mid=2247501576&idx=1&sn=657e1c89d1007a935820d394d64f4035&scene=21#wechat_redirect)
+- [https://zhuanlan.zhihu.com/p/79772089](https://zhuanlan.zhihu.com/p/79772089)
+- [https://www.jianshu.com/p/0d90b92000c0](https://www.jianshu.com/p/0d90b92000c0)
+- [https://segmentfault.com/a/1190000039367851?utm_source=sf-similar-article](https://segmentfault.com/a/1190000039367851?utm_source=sf-similar-article)
+- [https://www.cnblogs.com/chaojiyingxiong/p/15799617.html](https://www.cnblogs.com/chaojiyingxiong/p/15799617.html)
+- [http://www.wowotech.net/process_management/scheduler-history.html](http://www.wowotech.net/process_management/scheduler-history.html)
+- [https://www.ibm.com/developerworks/cn/linux/l-cn-scheduler/index.html](https://www.ibm.com/developerworks/cn/linux/l-cn-scheduler/index.html)
+- [https://www.jianshu.com/p/673c9e4817a8](https://www.jianshu.com/p/673c9e4817a8)
+- [https://blog.eastonman.com/blog/2021/02/cfs/](https://blog.eastonman.com/blog/2021/02/cfs/)
+- [https://www.kernel.org/doc/html/latest/scheduler/sched-design-CFS.html](https://www.kernel.org/doc/html/latest/scheduler/sched-design-CFS.html)
+- [https://time.geekbang.org/column/intro/100024701?tab=catalog](https://time.geekbang.org/column/intro/100024701?tab=catalog)
