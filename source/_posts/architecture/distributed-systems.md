@@ -279,7 +279,7 @@ Zookeeper 和 Raft 类似，先发出 Log 条目之后，当 Leader 收到了过
 
 我们说可序列化是指，并行的执行一些事务得到的结果，与按照某种串行的顺序来执行这些事务，可以得到相同的结果。实际的执行过程或许有大量的并行处理，但是这里要求得到的结果与按照某种顺序一次一个事务的串行执行结果是一样的。所以，如果检查一个并发事务执行是否是可序列化的，可以查看结果，并看看是否可以找到对于同一些事务，存在一次只执行一个事务的顺序，按照这个顺序执行可以生成相同的结果。
 
-> 现实中隔离性要看数据库配置的隔离级别。
+> 现实中隔离性要看数据库配置的隔离级别: [数据库事务隔离级别](https://cloud.tencent.com/developer/beta/article/1833688)。
 
 ### Concurrency Control
 
@@ -365,17 +365,22 @@ end
 
 参考链接:
 
-[https://sineyuan.github.io/post/etcd-raft-source-guide/](https://sineyuan.github.io/post/etcd-raft-source-guide/)
-[https://github.com/etcd-io/raft](https://github.com/etcd-io/raft)
-[https://raft.github.io/](https://raft.github.io/)
-[https://github.com/goraft/raft](https://github.com/goraft/raft)
-[https://github.com/hashicorp/raft](https://github.com/hashicorp/raft)
-[https://zhuanlan.zhihu.com/p/49792009](https://zhuanlan.zhihu.com/p/49792009)
-[http://www.zhaowenyu.com/etcd-doc/introduction/what-is-raft.html](http://www.zhaowenyu.com/etcd-doc/introduction/what-is-raft.html)
-[https://zhuanlan.zhihu.com/p/91288179](https://zhuanlan.zhihu.com/p/91288179)
-[https://docs.qq.com/doc/DY0VxSkVGWHFYSlZJ?_t=1609557593539](https://docs.qq.com/doc/DY0VxSkVGWHFYSlZJ?_t=1609557593539)
-[https://www.open-open.com/lib/view/open1328763454608.html](https://www.open-open.com/lib/view/open1328763454608.html)
-[https://ms2008.github.io/2019/12/04/etcd-rumor/](https://ms2008.github.io/2019/12/04/etcd-rumor/)
-[https://zhuanlan.zhihu.com/p/152105666](https://zhuanlan.zhihu.com/p/152105666)
-[https://zhuanlan.zhihu.com/p/524885008](https://zhuanlan.zhihu.com/p/524885008)
-[https://t1mek1ller.github.io/2018/03/01/raft/](https://t1mek1ller.github.io/2018/03/01/raft/)
+- [https://mit-public-courses-cn-translatio.gitbook.io/mit6-824](https://mit-public-courses-cn-translatio.gitbook.io/mit6-824)
+- [http://www.kailing.pub/raft/index.html](http://www.kailing.pub/raft/index.html)
+- [https://cloud.tencent.com/developer/beta/article/1833688](https://cloud.tencent.com/developer/beta/article/1833688)
+- [https://sineyuan.github.io/post/etcd-raft-source-guide/](https://sineyuan.github.io/post/etcd-raft-source-guide/)
+- [https://github.com/etcd-io/raft](https://github.com/etcd-io/raft)
+- [https://raft.github.io/](https://raft.github.io/)
+- [https://github.com/goraft/raft](https://github.com/goraft/raft)
+- [https://github.com/hashicorp/raft](https://github.com/hashicorp/raft)
+- [https://zhuanlan.zhihu.com/p/49792009](https://zhuanlan.zhihu.com/p/49792009)
+- [http://www.zhaowenyu.com/etcd-doc/introduction/what-is-raft.html](http://www.zhaowenyu.com/etcd-doc/introduction/what-is-raft.html)
+- [https://zhuanlan.zhihu.com/p/91288179](https://zhuanlan.zhihu.com/p/91288179)
+- [https://docs.qq.com/doc/DY0VxSkVGWHFYSlZJ?_t=1609557593539](https://docs.qq.com/doc/DY0VxSkVGWHFYSlZJ?_t=1609557593539)
+- [https://www.open-open.com/lib/view/open1328763454608.html](https://www.open-open.com/lib/view/open1328763454608.html)
+- [https://ms2008.github.io/2019/12/04/etcd-rumor/](https://ms2008.github.io/2019/12/04/etcd-rumor/)
+- [https://zhuanlan.zhihu.com/p/152105666](https://zhuanlan.zhihu.com/p/152105666)
+- [https://zhuanlan.zhihu.com/p/524885008](https://zhuanlan.zhihu.com/p/524885008)
+- [https://t1mek1ller.github.io/2018/03/01/raft/](https://t1mek1ller.github.io/2018/03/01/raft/)
+- [https://www.jianshu.com/p/ce47091ccd5b](https://www.jianshu.com/p/ce47091ccd5b)
+- [https://cloud.tencent.com/developer/beta/article/1833688](https://cloud.tencent.com/developer/beta/article/1833688)
