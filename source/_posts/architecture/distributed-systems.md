@@ -167,12 +167,6 @@ group raft
         end note
     end
 
-    Leader --> Client : response
-    note right
-    和 commit 流程同步执行，如果有过半节点响应，则返回成功，同时执行 commit 逻辑
-    如果没有过半节点响应，则返回失败，不执行 commit 逻辑
-    end note
-
     group commit
         Leader --> Follower1 : AppendEntries
         Follower1 --> Follower1 : judge commit ID
@@ -184,6 +178,11 @@ group raft
         Follower2 --> Follower2 : judge commit ID
     end
 end
+
+Leader --> Client : response
+note right
+等待 commit 返回信息，如果有过半节点响应，则返回成功，否则会重试
+end note
 
 @enduml
 ```
@@ -367,7 +366,6 @@ end
 
 - [https://mit-public-courses-cn-translatio.gitbook.io/mit6-824](https://mit-public-courses-cn-translatio.gitbook.io/mit6-824)
 - [http://www.kailing.pub/raft/index.html](http://www.kailing.pub/raft/index.html)
-- [https://cloud.tencent.com/developer/beta/article/1833688](https://cloud.tencent.com/developer/beta/article/1833688)
 - [https://sineyuan.github.io/post/etcd-raft-source-guide/](https://sineyuan.github.io/post/etcd-raft-source-guide/)
 - [https://github.com/etcd-io/raft](https://github.com/etcd-io/raft)
 - [https://raft.github.io/](https://raft.github.io/)
@@ -384,3 +382,4 @@ end
 - [https://t1mek1ller.github.io/2018/03/01/raft/](https://t1mek1ller.github.io/2018/03/01/raft/)
 - [https://www.jianshu.com/p/ce47091ccd5b](https://www.jianshu.com/p/ce47091ccd5b)
 - [https://cloud.tencent.com/developer/beta/article/1833688](https://cloud.tencent.com/developer/beta/article/1833688)
+- [https://cloud.tencent.com/developer/beta/article/1450773](https://cloud.tencent.com/developer/beta/article/1450773)
