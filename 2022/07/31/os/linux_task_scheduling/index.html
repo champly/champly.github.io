@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#02b1e0"><meta name="generator" content="Hexo 6.2.0">
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/logo/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/logo/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/logo/favicon-16x16.png">
+  <link rel="mask-icon" href="/images/logo/favicon.ico" color="#02b1e0">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha256-HtsXJanqjKTc8vVQjO4YMhiqFoXkfBsjBWcX91T1jr8=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.16.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12},"copycode":{"enable":true,"style":"mac"},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"},"path":"/search.json","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":true}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="Linux 任务调度 task_struct在 Linux 里面，无论是进程还是线程，到了内核里面，统一都叫任务（Task），由一个统一的结构体 task_struct 进行管理  这个结构有点复杂，具体可以看相关 代码。 任务 ID">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux 进程管理(二)：任务调度">
+<meta property="og:url" content="http://example.com/2022/07/31/os/linux_task_scheduling/index.html">
+<meta property="og:site_name" content="champly">
+<meta property="og:description" content="Linux 任务调度 task_struct在 Linux 里面，无论是进程还是线程，到了内核里面，统一都叫任务（Task），由一个统一的结构体 task_struct 进行管理  这个结构有点复杂，具体可以看相关 代码。 任务 ID">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/images/os/linux_task_shceduling/task.jpeg">
+<meta property="article:published_time" content="2022-07-31T00:06:22.000Z">
+<meta property="article:modified_time" content="2023-05-11T05:53:11.750Z">
+<meta property="article:author" content="champly">
+<meta property="article:tag" content="Linux">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/os/linux_task_shceduling/task.jpeg">
+
+
+<link rel="canonical" href="http://example.com/2022/07/31/os/linux_task_scheduling/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"en","comments":true,"permalink":"http://example.com/2022/07/31/os/linux_task_scheduling/","path":"2022/07/31/os/linux_task_scheduling/","title":"Linux 进程管理(二)：任务调度"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Linux 进程管理(二)：任务调度 | champly</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<link rel="alternate" href="/atom.xml" title="champly" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">champly</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">To be or not to be is up to you</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags<span class="badge">10</span></a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories<span class="badge">5</span></a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives<span class="badge">7</span></a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup"><div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off" maxlength="80"
+           placeholder="Searching..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close" role="button">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="search-result-container no-result">
+  <div class="search-result-icon">
+    <i class="fa fa-spinner fa-pulse fa-5x"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#task-struct"><span class="nav-number">1.</span> <span class="nav-text">task_struct</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A1-ID"><span class="nav-number">1.1.</span> <span class="nav-text">任务 ID</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%8A%B6%E6%80%81"><span class="nav-number">1.2.</span> <span class="nav-text">状态</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%90%E8%A1%8C%E7%BB%9F%E8%AE%A1%E4%BF%A1%E6%81%AF"><span class="nav-number">1.3.</span> <span class="nav-text">运行统计信息</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B0%83%E5%BA%A6%E5%8E%9F%E7%90%86"><span class="nav-number">2.</span> <span class="nav-text">调度原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B0%83%E5%BA%A6%E7%AD%96%E7%95%A5"><span class="nav-number">2.1.</span> <span class="nav-text">调度策略</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%9E%E6%97%B6%E8%B0%83%E5%BA%A6%E7%AD%96%E7%95%A5"><span class="nav-number">2.1.1.</span> <span class="nav-text">实时调度策略</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%99%AE%E9%80%9A%E8%B0%83%E5%BA%A6%E7%AD%96%E7%95%A5"><span class="nav-number">2.1.2.</span> <span class="nav-text">普通调度策略</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9-x2F-%E6%9F%A5%E7%9C%8B%E8%B0%83%E5%BA%A6%E7%AD%96%E7%95%A5"><span class="nav-number">2.1.3.</span> <span class="nav-text">修改&#x2F;查看调度策略</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B0%83%E5%BA%A6%E7%AD%96%E7%95%A5%E5%AE%9E%E7%8E%B0"><span class="nav-number">2.2.</span> <span class="nav-text">调度策略实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CFS"><span class="nav-number">2.3.</span> <span class="nav-text">CFS</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B0%83%E5%BA%A6%E9%98%9F%E5%88%97%E4%B8%8E%E8%B0%83%E5%BA%A6%E5%AE%9E%E4%BD%93"><span class="nav-number">2.4.</span> <span class="nav-text">调度队列与调度实体</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B0%83%E5%BA%A6"><span class="nav-number">3.</span> <span class="nav-text">调度</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#schedule"><span class="nav-number">3.1.</span> <span class="nav-text">__schedule</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8A%A2%E5%8D%A0%E5%BC%8F%E8%B0%83%E5%BA%A6"><span class="nav-number">3.2.</span> <span class="nav-text">抢占式调度</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%8A%A2%E5%8D%A0%E8%BF%87%E7%A8%8B"><span class="nav-number">3.2.1.</span> <span class="nav-text">抢占过程</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%8A%A2%E5%8D%A0%E6%97%B6%E6%9C%BA"><span class="nav-number">3.2.2.</span> <span class="nav-text">抢占时机</span></a></li></ol></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="champly"
+      src="/images/themes/logo.jpeg">
+  <p class="site-author-name" itemprop="name">champly</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">7</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/champly" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;champly" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:champly@outlook.com" title="E-Mail → mailto:champly@outlook.com" rel="noopener me" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+<script type="text/javascript" charset="utf-8" src="/js/tagcloud.js"></script>
+<script type="text/javascript" charset="utf-8" src="/js/tagcanvas.js"></script>
+<div class="widget-wrap">
+    <div id="myCanvasContainer" class="widget tagcloud">
+        <canvas width="250" height="250" id="resCanvas" style="width:100%">
+            <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CNI/" rel="tag">CNI</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Distributed/" rel="tag">Distributed</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hexo/" rel="tag">Hexo</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/IPVS/" rel="tag">IPVS</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Kubernetes/" rel="tag">Kubernetes</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux/" rel="tag">Linux</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Next/" rel="tag">Next</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Raft/" rel="tag">Raft</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/eBPF/" rel="tag">eBPF</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/iptables/" rel="tag">iptables</a><span class="tag-list-count">1</span></li></ul>
+        </canvas>
+    </div>
+</div>
+
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2022/07/31/os/linux_task_scheduling/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/themes/logo.jpeg">
+      <meta itemprop="name" content="champly">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="champly">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Linux 进程管理(二)：任务调度 | champly">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux 进程管理(二)：任务调度
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-07-31 08:06:22" itemprop="dateCreated datePublished" datetime="2022-07-31T08:06:22+08:00">2022-07-31</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-05-11 13:53:11" itemprop="dateModified" datetime="2023-05-11T13:53:11+08:00">2023-05-11</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/OS/" itemprop="url" rel="index"><span itemprop="name">OS</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">Views: </span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="Word count in article">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">Word count in article: </span>
+      <span>14k</span>
+    </span>
+    <span class="post-meta-item" title="Reading time">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">Reading time &asymp;</span>
+      <span>13 mins.</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>Linux 任务调度</p>
+<h2 id="task-struct"><a href="#task-struct" class="headerlink" title="task_struct"></a>task_struct</h2><p>在 Linux 里面，无论是进程还是线程，到了内核里面，统一都叫任务（Task），由一个统一的结构体 <code>task_struct</code> 进行管理</p>
+<p><img data-src="/images/os/linux_task_shceduling/task.jpeg" alt="task"></p>
+<p>这个结构有点复杂，具体可以看相关 <a target="_blank" rel="noopener" href="https://elixir.bootlin.com/linux/v5.19/source/include/linux/sched.h#L726">代码</a>。</p>
+<h3 id="任务-ID"><a href="#任务-ID" class="headerlink" title="任务 ID"></a>任务 ID</h3><p>每一个任务都应该有一个任务 ID 作为唯一标识</p>
+<p><a target="_blank" rel="noopener" href="https://elixir.bootlin.com/linux/v5.19/source/include/linux/sched.h#L950">code</a></p>
+<figure class="highlight c"><figcaption><span>include/linux/sched.h</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">pid_t</span>				pid;</span><br><span class="line"><span class="type">pid_t</span>				tgid;</span><br><span class="line"><span class="comment">// ......</span></span><br><span class="line"><span class="comment">/* Real parent process: */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span> __<span class="title">rcu</span>	*<span class="title">real_parent</span>;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* Recipient of SIGCHLD, wait4() reports: */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span> __<span class="title">rcu</span>	*<span class="title">parent</span>;</span></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">  * Children/sibling form the list of natural children:</span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">list_head</span>		<span class="title">children</span>;</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">list_head</span>		<span class="title">sibling</span>;</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span>		*<span class="title">group_leader</span>;</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>pid（process ID）: 线程 ID</li>
+<li>tgid（thread group ID）：主线程 ID，当前线程就是主线程，那么 tgid 就是 pid</li>
+<li>parent: 指向其父进程。当它终止时，必须向它的父进程发送信号</li>
+<li>children: 表示链表的头部。链表中的所有元素都是它的子进程</li>
+<li>sibling: 用于把当前进程插入到兄弟链表中</li>
+<li>group_leader：指向进程的主线程</li>
+</ul>
+<p>通过对比 tgid 和 pid 就可以知道当前 task_struct 是进程还是线程。如果只是想通过 ps 查看有多少进程，可以只展示 <code>pid == tgid</code> 的 task_struct，就不用把所有的都展示出来；如果想要结束一个进程，可以使用 kill 命令结束整个进程而不是线程。</p>
+<blockquote>
+<p>当然也有发送信号给单个线程的情况：可以看 Go Runtime 的抢占式调度的实现</p>
+</blockquote>
+<h3 id="状态"><a href="#状态" class="headerlink" title="状态"></a>状态</h3><p>在 task_struct 的状态 <a target="_blank" rel="noopener" href="https://elixir.bootlin.com/linux/v5.19/source/include/linux/sched.h#L83">code</a></p>
+<figure class="highlight c"><figcaption><span>include/linux/sched.h</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Used in tsk-&gt;state: */</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> TASK_RUNNING			0x0000</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> TASK_INTERRUPTIBLE		0x0001</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> TASK_UNINTERRUPTIBLE		0x0002</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __TASK_STOPPED			0x0004</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __TASK_TRACED			0x0008</span></span><br><span class="line"><span class="comment">/* Used in tsk-&gt;exit_state: */</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> EXIT_DEAD			0x0010</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> EXIT_ZOMBIE			0x0020</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> EXIT_TRACE			(EXIT_ZOMBIE | EXIT_DEAD)</span></span><br><span class="line"><span class="comment">/* Used in tsk-&gt;state again: */</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> TASK_PARKED			0x0040</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> TASK_DEAD			0x0080</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> TASK_WAKEKILL			0x0100</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> TASK_WAKING			0x0200</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> TASK_NOLOAD			0x0400</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> TASK_NEW			0x0800</span></span><br><span class="line"><span class="comment">/* RT specific auxilliary flag to mark RT lock waiters */</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> TASK_RTLOCK_WAIT		0x1000</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> TASK_STATE_MAX			0x2000</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* Convenience macros for the sake of set_current_state: */</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> TASK_KILLABLE			(TASK_WAKEKILL | TASK_UNINTERRUPTIBLE)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> TASK_STOPPED			(TASK_WAKEKILL | __TASK_STOPPED)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> TASK_TRACED			__TASK_TRACED</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> TASK_IDLE			(TASK_UNINTERRUPTIBLE | TASK_NOLOAD)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* Convenience macros for the sake of wake_up(): */</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> TASK_NORMAL			(TASK_INTERRUPTIBLE | TASK_UNINTERRUPTIBLE)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* get_task_state(): */</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> TASK_REPORT			(TASK_RUNNING | TASK_INTERRUPTIBLE | \</span></span><br><span class="line"><span class="meta">					 TASK_UNINTERRUPTIBLE | __TASK_STOPPED | \</span></span><br><span class="line"><span class="meta">					 __TASK_TRACED | EXIT_DEAD | EXIT_ZOMBIE | \</span></span><br><span class="line"><span class="meta">					 TASK_PARKED)</span></span><br></pre></td></tr></table></figure>
+
+<p><code>TASK_RUNNING</code> 并不是说进程正在运行，而是表示进程在时刻准备运行的状态。当处于这个状态的进程获得时间片的时候，就是在运行中；如果没有获得时间片，就说明它被其他进程抢占了，等待再次分配时间片。运行中的进程，一旦要进行一些 I&#x2F;O 操作，需要等待 I&#x2F;O 操作完毕，这个时候会主动释放 CPU，进入睡眠状态，在 Linux 中，有两种睡眠状态</p>
+<ul>
+<li>TASK_INTERRUPTIBLE：可中断的睡眠状态。虽然在睡眠，等待 I&#x2F;O 完成，但是这个时候一个信号来的时候，进程还是要被唤醒，只是唤醒之后不是继续刚才的操作，而是进行信号处理；</li>
+<li>TASK_UNINTERRUPTIBLE：不可中断的睡眠状态。只能等待 I&#x2F;O 完成，连 kill 信号也会被忽略。除非重启电脑，没有其他办法；</li>
+<li>TASK_KILLABLE：可终止的睡眠状态。进程处于这种状态中，原理和 TASK_UNINTERRUPTIBLE 类似，只不过是可以响应 kill 信号；</li>
+<li>TASK_STOPPED：在进程收到 SIGSTOP、SIGTTIN、SIGTSTP 或者 SIGTTOU 信号之后进入该状态；</li>
+<li>TASK_TRACED：表示进程被 debugger 等进程监控，进程执行被调试程序所停止。当一个进程被另外的进程所监视，每一个信号都会让该进程进入这个状态；</li>
+<li>EXIT_ZOMBIE：一旦一个进程要结束，先进入这个状态，但是这个时候它的父进程还没有使用 wait() 等系统调用来获取它的终止信息，此时进程就成了僵尸进程；</li>
+<li>EXIT_DEAD：是进程的最终状态</li>
+</ul>
+<p>状态转换如下所示：</p>
+<pre><code class="highlight mermaid">stateDiagram
+
+state &quot;p-&gt;state = TASK_RUNNING&quot; as pstate
+state &quot;运行&quot; as run
+
+[*] --&gt;  sys_fork
+sys_fork --&gt; _do_fork
+_do_fork --&gt; wake_up_new_task
+wake_up_new_task --&gt; pstate
+pstate --&gt; TASK_RUNNING
+TASK_RUNNING --&gt; run: 分配 CPU
+run --&gt; TASK_RUNNING: 时间片使用完毕或被抢占
+run --&gt; TASK_INTERRUPTIBLE
+run --&gt; TASK_UNINTERRUPTIBLE
+run --&gt; TASK_KILLABLE
+TASK_INTERRUPTIBLE --&gt; TASK_RUNNING
+TASK_UNINTERRUPTIBLE --&gt; TASK_RUNNING
+TASK_KILLABLE --&gt; TASK_RUNNING
+run --&gt; TASK_STOPPED
+run --&gt; EXIT_ZOMBIE: exit
+EXIT_ZOMBIE --&gt; EXIT_DEAD
+EXIT_DEAD --&gt; [*]</code></pre>
+
+<h3 id="运行统计信息"><a href="#运行统计信息" class="headerlink" title="运行统计信息"></a>运行统计信息</h3><p>主要包含在下面这些字段中 <a target="_blank" rel="noopener" href="https://elixir.bootlin.com/linux/v5.19/source/include/linux/sched.h#L1002">code</a></p>
+<figure class="highlight c"><figcaption><span>include/linux/sched.h</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">	u64				utime;  <span class="comment">// 用户态消耗的 CPU 时间</span></span><br><span class="line">	u64				stime;  <span class="comment">// 内核态消耗的 CPU 时间</span></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_ARCH_HAS_SCALED_CPUTIME</span></span><br><span class="line">	u64				utimescaled;</span><br><span class="line">	u64				stimescaled;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">	u64				gtime;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">prev_cputime</span>		<span class="title">prev_cputime</span>;</span></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_VIRT_CPU_ACCOUNTING_GEN</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">vtime</span>			<span class="title">vtime</span>;</span></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_NO_HZ_FULL</span></span><br><span class="line">	<span class="type">atomic_t</span>			tick_dep_mask;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">	<span class="comment">/* Context switch counts: */</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span>			nvcsw;  <span class="comment">// 自愿(voluntary)上下文切换计数</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span>			nivcsw; <span class="comment">// 非自愿(involuntary)上下文切换计数</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Monotonic time in nsecs: */</span></span><br><span class="line">	u64				start_time;     <span class="comment">// 进程启动时间，不包含睡眠时间</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Boot based time in nsecs: */</span></span><br><span class="line">	u64				start_boottime; <span class="comment">// 进程启动时间，包含睡眠时间</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="调度原理"><a href="#调度原理" class="headerlink" title="调度原理"></a>调度原理</h2><p>在 Linux 里面，进程可以分为两种：实时进程和普通进程。</p>
+<ul>
+<li>实时进程：需要尽快执行返回结果的那种</li>
+<li>普通进程：大部分进程其实都是这种</li>
+</ul>
+<h3 id="调度策略"><a href="#调度策略" class="headerlink" title="调度策略"></a>调度策略</h3><p>在 task_struct 中 的 <a target="_blank" rel="noopener" href="https://elixir.bootlin.com/linux/v5.19/source/include/linux/sched.h#L816">policy</a> 用来表示调度策略，有以下一些策略 <a target="_blank" rel="noopener" href="https://elixir.bootlin.com/linux/v5.19/source/include/uapi/linux/sched.h#L114">code</a></p>
+<figure class="highlight c"><figcaption><span>include/uapi/linux/sched.h</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Scheduling policies</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> SCHED_NORMAL		0  <span class="comment">// SCHED_OTHER</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> SCHED_FIFO		1</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> SCHED_RR		2</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> SCHED_BATCH		3</span></span><br><span class="line"><span class="comment">/* SCHED_ISO: reserved but not implemented yet */</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> SCHED_IDLE		5</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> SCHED_DEADLINE		6</span></span><br></pre></td></tr></table></figure>
+
+<p>配合调度策略的，还有优先级</p>
+<figure class="highlight c"><figcaption><span>include/linux/sched.h</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span>				prio;</span><br><span class="line"><span class="type">int</span>				static_prio;</span><br><span class="line"><span class="type">int</span>				normal_prio;</span><br><span class="line"><span class="type">unsigned</span> <span class="type">int</span>			rt_priority;</span><br></pre></td></tr></table></figure>
+
+<p>优先级其实就是一个数值，对于实时进程，优先级范围是 0～99；对于普通进程，优先级范围是 100~139。数值越小，优先级越高。</p>
+<h4 id="实时调度策略"><a href="#实时调度策略" class="headerlink" title="实时调度策略"></a>实时调度策略</h4><p>SCHED_FIFO、SCHED_RR、SCHED_DEADLINE 是实时进程的调度策略</p>
+<ul>
+<li>SCHED_FIFO：先来先执行</li>
+<li>SCHED_RR：轮流调度，采用时间片，相同优先级的任务当用完时间片会被放到队列尾部，以保证公平性，而更高优先级的任务也是可以抢占低优先级的任务</li>
+<li>SCHED_DEADLINE：按照任务的 deadline 进行调度的。DL 调度器总是选择其 deadline 距离当前时间点最近的那个任务，并调度它执行</li>
+</ul>
+<h4 id="普通调度策略"><a href="#普通调度策略" class="headerlink" title="普通调度策略"></a>普通调度策略</h4><p>SCHED_NORMAL、SCHED_BATCH、SCHED_IDLE 是普通进程的调度策略</p>
+<ul>
+<li>SCHED_NORMAL: 普通进程一般都是这个调度策略</li>
+<li>SCHED_BATCH: 后台进程，几乎不需要和前段进行交互</li>
+<li>SCHED_IDLE: 特别空闲的时候才跑的进程</li>
+</ul>
+<h4 id="修改-x2F-查看调度策略"><a href="#修改-x2F-查看调度策略" class="headerlink" title="修改&#x2F;查看调度策略"></a>修改&#x2F;查看调度策略</h4><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line">!690 # chrt -p 3986612</span><br><span class="line">pid 3986612&#x27;s current scheduling policy: SCHED_OTHER</span><br><span class="line">pid 3986612&#x27;s current scheduling priority: 0</span><br><span class="line"></span><br><span class="line">!698 # chrt  -f -p 10 3986612</span><br><span class="line">pid 3986612&#x27;s current scheduling policy: SCHED_FIFO</span><br><span class="line">pid 3986612&#x27;s current scheduling priority: 10</span><br><span class="line"></span><br><span class="line">!692 # chrt</span><br><span class="line">Show or change the real-time scheduling attributes of a process.</span><br><span class="line"></span><br><span class="line">Set policy:</span><br><span class="line"> chrt [options] &lt;priority&gt; &lt;command&gt; [&lt;arg&gt;...]</span><br><span class="line"> chrt [options] --pid &lt;priority&gt; &lt;pid&gt;</span><br><span class="line"></span><br><span class="line">Get policy:</span><br><span class="line"> chrt [options] -p &lt;pid&gt;</span><br><span class="line"></span><br><span class="line">Policy options:</span><br><span class="line"> -b, --batch          set policy to SCHED_BATCH</span><br><span class="line"> -d, --deadline       set policy to SCHED_DEADLINE</span><br><span class="line"> -f, --fifo           set policy to SCHED_FIFO</span><br><span class="line"> -i, --idle           set policy to SCHED_IDLE</span><br><span class="line"> -o, --other          set policy to SCHED_OTHER</span><br><span class="line"> -r, --rr             set policy to SCHED_RR (default)</span><br><span class="line"></span><br><span class="line">Scheduling options:</span><br><span class="line"> -R, --reset-on-fork       set SCHED_RESET_ON_FORK for FIFO or RR</span><br><span class="line"> -T, --sched-runtime &lt;ns&gt;  runtime parameter for DEADLINE</span><br><span class="line"> -P, --sched-period &lt;ns&gt;   period parameter for DEADLINE</span><br><span class="line"> -D, --sched-deadline &lt;ns&gt; deadline parameter for DEADLINE</span><br><span class="line"></span><br><span class="line">Other options:</span><br><span class="line"> -a, --all-tasks      operate on all the tasks (threads) for a given pid</span><br><span class="line"> -m, --max            show min and max valid priorities</span><br><span class="line"> -p, --pid            operate on existing given pid</span><br><span class="line"> -v, --verbose        display status information</span><br><span class="line"></span><br><span class="line"> -h, --help     display this help and exit</span><br><span class="line"> -V, --version  output version information and exit</span><br><span class="line"></span><br><span class="line">For more details see chrt(1).</span><br></pre></td></tr></table></figure>
+
+<p>不管是 policy 还是 priority，都是一个变量，真正做调度的是 <a target="_blank" rel="noopener" href="https://elixir.bootlin.com/linux/v5.19/source/include/linux/sched.h#L780">sched_class</a></p>
+<h3 id="调度策略实现"><a href="#调度策略实现" class="headerlink" title="调度策略实现"></a>调度策略实现</h3><p>sched_class 有这些实现 <a target="_blank" rel="noopener" href="https://elixir.bootlin.com/linux/v5.19/source/kernel/sched/sched.h#L2213">code</a></p>
+<figure class="highlight c"><figcaption><span>kernel/sched/sched.h</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">extern</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">sched_class</span> <span class="title">stop_sched_class</span>;</span></span><br><span class="line"><span class="keyword">extern</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">sched_class</span> <span class="title">dl_sched_class</span>;</span></span><br><span class="line"><span class="keyword">extern</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">sched_class</span> <span class="title">rt_sched_class</span>;</span></span><br><span class="line"><span class="keyword">extern</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">sched_class</span> <span class="title">fair_sched_class</span>;</span></span><br><span class="line"><span class="keyword">extern</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">sched_class</span> <span class="title">idle_sched_class</span>;</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>stop_sched_class: 优先级最高的任务会使用这种策略，会中断所有其他线程，且不会被其他任务打断</li>
+<li>dl_sched_class: 对应 deadline 调度策略</li>
+<li>rt_sched_class: 对应 RR 算法或者 FIFO 算法的调度策略，具体调度策略由 task_struct-&gt;policy 指定</li>
+<li>fair_sched_class: 普通进程的调度策略</li>
+<li>idle_sched_class: 空闲进程的调度策略</li>
+</ul>
+<p>这里实时进程的调度策略 RR 和 FIFO 相对简单一些，平时遇到的基本上都是普通进程，这里重点分析普通进程的调度，也就是 fair_sched_class。</p>
+<h3 id="CFS"><a href="#CFS" class="headerlink" title="CFS"></a>CFS</h3><p>在 Linux 里面，实现了一个基于 CFS(Completely Fair Scheduling) 的调度算法。CPU 会提供一个时钟，过一段时间就触发一个时钟中断。CFS 为每个进程设置一个虚拟运行时间 vruntime。如果一个进程在运行，随着时间的增加，也就是一个个 tick 的到来，进程的 vruntime 将不断增大。没有得到运行的进程 vruntime 不变。vruntime 小的进程，会优先运行进程。<a target="_blank" rel="noopener" href="https://elixir.bootlin.com/linux/v5.19/source/kernel/sched/fair.c#L888">code</a></p>
+<figure class="highlight c"><figcaption><span>kernel/sched/fair.c</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Update the current task&#x27;s runtime statistics.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">update_curr</span><span class="params">(<span class="keyword">struct</span> cfs_rq *cfs_rq)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">sched_entity</span> *<span class="title">curr</span> =</span> cfs_rq-&gt;curr;</span><br><span class="line">	u64 now = rq_clock_task(rq_of(cfs_rq));</span><br><span class="line">	u64 delta_exec;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (unlikely(!curr))</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">	delta_exec = now - curr-&gt;exec_start;</span><br><span class="line">	<span class="keyword">if</span> (unlikely((s64)delta_exec &lt;= <span class="number">0</span>))</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">	curr-&gt;exec_start = now;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// ......</span></span><br><span class="line"></span><br><span class="line">	curr-&gt;vruntime += calc_delta_fair(delta_exec, curr);</span><br><span class="line">	update_min_vruntime(cfs_rq);</span><br><span class="line">	<span class="comment">// ......</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * delta /= w</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="keyword">inline</span> u64 <span class="title function_">calc_delta_fair</span><span class="params">(u64 delta, <span class="keyword">struct</span> sched_entity *se)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="keyword">if</span> (unlikely(se-&gt;load.weight != NICE_0_LOAD))</span><br><span class="line">		delta = __calc_delta(delta, NICE_0_LOAD, &amp;se-&gt;load);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> delta;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// include/linux/sched.h</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">sched_entity</span> &#123;</span></span><br><span class="line">	<span class="comment">/* For load-balancing: */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">load_weight</span>		<span class="title">load</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">rb_node</span>			<span class="title">run_node</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">list_head</span>		<span class="title">group_node</span>;</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span>			on_rq;</span><br><span class="line"></span><br><span class="line">	u64				exec_start;</span><br><span class="line">	u64				sum_exec_runtime;</span><br><span class="line">	u64				vruntime;</span><br><span class="line">	u64				prev_sum_exec_runtime;</span><br><span class="line">	<span class="comment">// ......</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>开始运行的时间减去当前时间，就是这次运行的时间 delta_exec，然后通过 calc_delta_fair 计算得到最终的 vruntime</p>
+<blockquote>
+<p>vruntime +&#x3D; 真实运行的时间 * NICE_0_LOAD &#x2F; 进程权重</p>
+</blockquote>
+<p>进程每次运行完毕后就会更新 vruntime，然后选择 vruntime 最小的进程继续运行，这将由红黑树完成。</p>
+<h3 id="调度队列与调度实体"><a href="#调度队列与调度实体" class="headerlink" title="调度队列与调度实体"></a>调度队列与调度实体</h3><p>上面说到的红黑树的节点，应该是包括 vruntime 的，称为调度实体，在 task_struct 中，有这些<a target="_blank" rel="noopener" href="https://elixir.bootlin.com/linux/v5.19/source/include/linux/sched.h#L777">变量</a></p>
+<figure class="highlight c"><figcaption><span>include/linux/sched.h</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// task_struct</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">sched_entity</span>		<span class="title">se</span>;</span>		<span class="comment">// CFS 公平算法调度实体</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">sched_rt_entity</span>		<span class="title">rt</span>;</span> <span class="comment">// 实时调度实体</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">sched_dl_entity</span>		<span class="title">dl</span>;</span>	<span class="comment">// Deadline 调度实体</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">sched_entity</span> &#123;</span></span><br><span class="line">	<span class="comment">/* For load-balancing: */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">load_weight</span>		<span class="title">load</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">rb_node</span>			<span class="title">run_node</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">list_head</span>		<span class="title">group_node</span>;</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span>			on_rq;</span><br><span class="line"></span><br><span class="line">	u64				exec_start;</span><br><span class="line">	u64				sum_exec_runtime;</span><br><span class="line">	u64				vruntime;</span><br><span class="line">	u64				prev_sum_exec_runtime;</span><br><span class="line"></span><br><span class="line">	u64				nr_migrations;</span><br><span class="line">	<span class="comment">// ......</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>进程根据自己是实时的，还是普通的，通过变量将自己挂到某一个调度队列里面，和其它进程排序，等待被调度。如果是普通进程，就将 sched_entity 挂到红黑树上。而真正维护这些队列的就是 CPU，所以每个 CPU 都有自己的 <a target="_blank" rel="noopener" href="https://elixir.bootlin.com/linux/v5.19/source/kernel/sched/sched.h#L918"><code>struct rq</code></a> 结构</p>
+<figure class="highlight c"><figcaption><span>kernel/sched/sched.h</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">rq</span> &#123;</span></span><br><span class="line">	<span class="comment">/* runqueue lock: */</span></span><br><span class="line">	<span class="type">raw_spinlock_t</span>		__lock;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * nr_running and cpu_load should be in the same cacheline because</span></span><br><span class="line"><span class="comment">	 * remote CPUs use both these fields when doing load calculation.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span>		nr_running;</span><br><span class="line">	<span class="comment">// ......</span></span><br><span class="line"></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">cfs_rq</span>		<span class="title">cfs</span>;</span>	<span class="comment">// CFS 运行队列</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">rt_rq</span>		<span class="title">rt</span>;</span>		<span class="comment">// 实时进程运行队列</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">dl_rq</span>		<span class="title">dl</span>;</span>		<span class="comment">// Deadline 运行队列</span></span><br><span class="line">	<span class="comment">// ......</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * This is part of a global counter where only the total sum</span></span><br><span class="line"><span class="comment">	 * over all CPUs matters. A task can increase this counter on</span></span><br><span class="line"><span class="comment">	 * one CPU and if it got migrated afterwards it may decrease</span></span><br><span class="line"><span class="comment">	 * it on another CPU. Always updated under the runqueue lock:</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span>		nr_uninterruptible;</span><br><span class="line"></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span> __<span class="title">rcu</span>	*<span class="title">curr</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span>	*<span class="title">idle</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span>	*<span class="title">stop</span>;</span></span><br><span class="line">	<span class="comment">// ......</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>对于普通进程公平队列 cfs_rq 中的 <a target="_blank" rel="noopener" href="https://elixir.bootlin.com/linux/v5.19/source/kernel/sched/sched.h#L542"><code>tasks_timeline</code></a> 就是指向红黑树的根节点。调度的时候会先判断是否有实时进程需要运行，如果没有，才会去 CFS 运行队列面找 vruntime 最小的进程运行</p>
+<figure class="highlight c"><figcaption><span>kernel/sched/core.c</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Pick up the highest-prio task:</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span> *</span></span><br><span class="line"><span class="class">__<span class="title">pick_next_task</span>(<span class="keyword">struct</span> <span class="title">rq</span> *<span class="title">rq</span>, <span class="keyword">struct</span> <span class="title">task_struct</span> *<span class="title">prev</span>, <span class="keyword">struct</span> <span class="title">rq_flags</span> *<span class="title">rf</span>)</span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">	<span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">sched_class</span> *<span class="keyword">class</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span> *<span class="title">p</span>;</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * Optimization: we know that if all tasks are in the fair class we can</span></span><br><span class="line"><span class="comment">	 * call that function directly, but only if the @prev task wasn&#x27;t of a</span></span><br><span class="line"><span class="comment">	 * higher scheduling class, because otherwise those lose the</span></span><br><span class="line"><span class="comment">	 * opportunity to pull in more work from other CPUs.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">if</span> (likely(!sched_class_above(prev-&gt;sched_class, &amp;fair_sched_class) &amp;&amp;</span><br><span class="line">		   rq-&gt;nr_running == rq-&gt;cfs.h_nr_running)) &#123;</span><br><span class="line"></span><br><span class="line">		p = pick_next_task_fair(rq, prev, rf);</span><br><span class="line">		<span class="keyword">if</span> (unlikely(p == RETRY_TASK))</span><br><span class="line">			<span class="keyword">goto</span> restart;</span><br><span class="line"></span><br><span class="line">		<span class="comment">/* Assume the next prioritized class is idle_sched_class */</span></span><br><span class="line">		<span class="keyword">if</span> (!p) &#123;</span><br><span class="line">			put_prev_task(rq, prev);</span><br><span class="line">			p = pick_next_task_idle(rq);</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">return</span> p;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">restart:</span><br><span class="line">	put_prev_task_balance(rq, prev, rf);</span><br><span class="line"></span><br><span class="line">	for_each_class(class) &#123;</span><br><span class="line">		p = class-&gt;pick_next_task(rq);</span><br><span class="line">		<span class="keyword">if</span> (p)</span><br><span class="line">			<span class="keyword">return</span> p;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	BUG(); <span class="comment">/* The idle class should always have a runnable task. */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里的 <code>for_each_class</code> 就是 <a target="_blank" rel="noopener" href="https://elixir.bootlin.com/linux/v5.19/source/kernel/sched/sched.h#L2213">依次</a> 循环，调用每个调度类的方法。这样整个运行的场景就可以串起来了，在每个 CPU 上都有一个队列 rq，这个队列包含了不同优先级的队列：rt_rq、cfs_rq 等，不同队列实现方式不一样，当某个 CPU 需要找下一个任务执行的时候，会按照优先级依次调用调度类，第一个没有找到才能找下一个调度类的任务，最终找到下个任务继续运行，这样就能保证实时任务的优先级永远大于普通任务。</p>
+<h2 id="调度"><a href="#调度" class="headerlink" title="调度"></a>调度</h2><p>计算机主要处理计算、网络、存储三个方面。计算主要是 CPU 和内存的合作；网络和存储则多是和外部设备合作；在操作外部设备的时候，往往需要让出 CPU，调用 <a target="_blank" rel="noopener" href="https://elixir.bootlin.com/linux/v5.19/source/kernel/sched/core.c#L6523"><code>schedule()</code></a> 函数</p>
+<figure class="highlight c"><figcaption><span>kernel/sched/core.c</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">asmlinkage __visible <span class="type">void</span> __sched <span class="title function_">schedule</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span> *<span class="title">tsk</span> =</span> current;</span><br><span class="line"></span><br><span class="line">	sched_submit_work(tsk);</span><br><span class="line">	<span class="keyword">do</span> &#123;</span><br><span class="line">		preempt_disable();</span><br><span class="line">		__schedule(SM_NONE);</span><br><span class="line">		sched_preempt_enable_no_resched();</span><br><span class="line">	&#125; <span class="keyword">while</span> (need_resched());</span><br><span class="line">	sched_update_worker(tsk);</span><br><span class="line">&#125;</span><br><span class="line">EXPORT_SYMBOL(schedule);</span><br></pre></td></tr></table></figure>
+
+<p>schedule 的主要逻辑都是在 <code>__schedule</code> 里面实现的</p>
+<h3 id="schedule"><a href="#schedule" class="headerlink" title="__schedule"></a>__schedule</h3><pre><code class="highlight mermaid">flowchart
+
+schedule --&gt; __schedule
+__schedule -- 1 --&gt; pick_next_task
+pick_next_task --&gt; __pick_next_task
+__pick_next_task --&gt; pick_next_task_fair
+__pick_next_task --&gt; other[class-&gt;pick_next_task]
+other --&gt; other-logic
+pick_next_task_fair --&gt; 1.update_curr
+1.update_curr --&gt; update-vruntime
+pick_next_task_fair --&gt; 2.pick_next_entity
+2.pick_next_entity --&gt; __pick_first_entity
+__pick_first_entity -- 2 return next --&gt; __schedule
+__schedule -- 3 --&gt; context_switch</code></pre>
+
+<ul>
+<li>取出当前 CPU 上的任务队列 rq，以及正在运行的进程 curr</li>
+<li>获取下一个要执行的任务</li>
+<li>如果是 CFS，就要更新 vruntime，然后取红黑树最左边的节点(vruntime 最小的任务)</li>
+<li>判断当前进程和下一个要执行的任务是否是同一个任务，如果不是，调用 context_switch</li>
+</ul>
+<p><a target="_blank" rel="noopener" href="https://elixir.bootlin.com/linux/v5.19/source/kernel/sched/core.c#L5094">context_switch</a> 主要的逻辑就是上下文切换</p>
+<ul>
+<li>切换进程空间，即虚拟内存</li>
+<li>切换寄存器和 CPU 上下文</li>
+</ul>
+<p>task_struct 里面有一个 <a target="_blank" rel="noopener" href="https://elixir.bootlin.com/linux/v5.19/source/include/linux/sched.h#L1510">thread</a> 的变量，保留了要切换进程的时候需要修改的寄存器。</p>
+<p>进程调度都会走到 __schedule 这里，如果是主动调用 schedule 就是主动让出，那如果不主动让出呢？</p>
+<h3 id="抢占式调度"><a href="#抢占式调度" class="headerlink" title="抢占式调度"></a>抢占式调度</h3><h4 id="抢占过程"><a href="#抢占过程" class="headerlink" title="抢占过程"></a>抢占过程</h4><p>最常见的现象就是一个进程执行时间太长，不主动让出 CPU，这个时候不能一直让这个进程继续运行，需要切换到另外一个进程。衡量这个时间点，就是计算机里面的时钟，每过一段时间（调度周期）就会触发一次时钟中断，这个时候 CPU 会切换任务去响应这个时钟中断，这个时候就可以查看是否需要抢占。时钟中断处理函数主要是 <a target="_blank" rel="noopener" href="https://elixir.bootlin.com/linux/v5.19/source/kernel/sched/core.c#L5400">scheduler_tick</a></p>
+<pre><code class="highlight mermaid">flowchart LR
+
+scheduler_tick --&gt; task_tick
+task_tick -- 根据 sched_class 判断 --&gt; task_tick_fair
+task_tick_fair --&gt; entity_tick
+entity_tick --&gt; 1.update_curr
+entity_tick --&gt; 2.check_preempt_tick</code></pre>
+
+<p>主要的就是 <a target="_blank" rel="noopener" href="https://elixir.bootlin.com/linux/v5.19/source/kernel/sched/fair.c#L4485">check_preempt_tick</a>，检查是否是应该抢占当前进程</p>
+<figure class="highlight c"><figcaption><span>kernel/sched/fair.c</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Preempt the current task with a newly woken task if needed:</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="type">void</span></span><br><span class="line"><span class="title function_">check_preempt_tick</span><span class="params">(<span class="keyword">struct</span> cfs_rq *cfs_rq, <span class="keyword">struct</span> sched_entity *curr)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> ideal_runtime, delta_exec;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">sched_entity</span> *<span class="title">se</span>;</span></span><br><span class="line">	s64 delta;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ideal_runtime 一个调度周期中，运行的“实际”(理论)时间</span></span><br><span class="line">	ideal_runtime = sched_slice(cfs_rq, curr);</span><br><span class="line">  <span class="comment">// delta_exec 这次调度运行的时间</span></span><br><span class="line">	delta_exec = curr-&gt;sum_exec_runtime - curr-&gt;prev_sum_exec_runtime;</span><br><span class="line">	<span class="keyword">if</span> (delta_exec &gt; ideal_runtime) &#123;</span><br><span class="line">		resched_curr(rq_of(cfs_rq));</span><br><span class="line">		<span class="comment">/*</span></span><br><span class="line"><span class="comment">		 * The current task ran long enough, ensure it doesn&#x27;t get</span></span><br><span class="line"><span class="comment">		 * re-elected due to buddy favours.</span></span><br><span class="line"><span class="comment">		 */</span></span><br><span class="line">		clear_buddies(cfs_rq, curr);</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * Ensure that a task that missed wakeup preemption by a</span></span><br><span class="line"><span class="comment">	 * narrow margin doesn&#x27;t have to wait for a full slice.</span></span><br><span class="line"><span class="comment">	 * This also mitigates buddy induced latencies under load.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">if</span> (delta_exec &lt; sysctl_sched_min_granularity)</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 取出红黑树最小的进程</span></span><br><span class="line">	se = __pick_first_entity(cfs_rq);</span><br><span class="line">	delta = curr-&gt;vruntime - se-&gt;vruntime;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (delta &lt; <span class="number">0</span>)</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (delta &gt; ideal_runtime)</span><br><span class="line">		resched_curr(rq_of(cfs_rq));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如果发现当前进程运行过长或者当前进程的 vruntime 大于红黑树中最小的进程的 vruntime，就会调用 resched_curr 标记当前进程为被抢占，而不是真正的抢占，而是打上一个标签 TIF_NEED_RESCHED</p>
+<p>另外一个可能抢占的场景就是当一个进程被唤醒的时候。当一个进程在等待 I&#x2F;O 当时候，会主动放弃 CPU，但是当 I&#x2F;O 到来的时候，进程往往会被唤醒。这时候是一个时机。当被唤醒的进程优先级高于 CPU 上的当前进程，就会触发抢占。</p>
+<pre><code class="highlight mermaid">flowchart LR
+
+try_to_wake_up --&gt; ttwu_queue
+ttwu_queue --&gt; ttwu_do_activate
+ttwu_do_activate --&gt; ttwu_do_wakeup
+ttwu_do_wakeup --&gt; check_preempt_curr</code></pre>
+
+<p>到这里，只是把进程标记为被抢占，但是没有发生真正的抢占动作</p>
+<h4 id="抢占时机"><a href="#抢占时机" class="headerlink" title="抢占时机"></a>抢占时机</h4><p>真正的抢占时机，是让正在运行的进程有机会调用 schedule。</p>
+<p>对于用户态进程来讲，从系统调用返回的那个时候，就是一个被抢占的时机。</p>
+<p>对于内核态的执行中，被抢占的时机一般发生在 preempt_enable() 中。对于内核有些操作不能被中断，所以一般都会 preempt_disable() 关闭抢占，当再次打开就是一次抢占的机会。还有就是从中断返回的时候返回的也是内核态，这个时候也是一个执行抢占的时机。</p>
+<hr>
+<p>参考链接:</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/HFQL5d-C24DKjQbYAQfl8g">https://mp.weixin.qq.com/s/HFQL5d-C24DKjQbYAQfl8g</a></li>
+<li><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=Mzk0MjE3NDE0Ng==&mid=2247501576&idx=1&sn=657e1c89d1007a935820d394d64f4035&scene=21#wechat_redirect">https://mp.weixin.qq.com/s?__biz&#x3D;Mzk0MjE3NDE0Ng&#x3D;&#x3D;&amp;mid&#x3D;2247501576&amp;idx&#x3D;1&amp;sn&#x3D;657e1c89d1007a935820d394d64f4035&amp;scene&#x3D;21#wechat_redirect</a></li>
+<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/79772089">https://zhuanlan.zhihu.com/p/79772089</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.jianshu.com/p/0d90b92000c0">https://www.jianshu.com/p/0d90b92000c0</a></li>
+<li><a target="_blank" rel="noopener" href="https://segmentfault.com/a/1190000039367851?utm_source=sf-similar-article">https://segmentfault.com/a/1190000039367851?utm_source&#x3D;sf-similar-article</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.cnblogs.com/chaojiyingxiong/p/15799617.html">https://www.cnblogs.com/chaojiyingxiong/p/15799617.html</a></li>
+<li><a target="_blank" rel="noopener" href="http://www.wowotech.net/process_management/scheduler-history.html">http://www.wowotech.net/process_management&#x2F;scheduler-history.html</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.ibm.com/developerworks/cn/linux/l-cn-scheduler/index.html">https://www.ibm.com/developerworks/cn/linux/l-cn-scheduler/index.html</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.jianshu.com/p/673c9e4817a8">https://www.jianshu.com/p/673c9e4817a8</a></li>
+<li><a target="_blank" rel="noopener" href="https://blog.eastonman.com/blog/2021/02/cfs/">https://blog.eastonman.com/blog/2021/02/cfs/</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.kernel.org/doc/html/latest/scheduler/sched-design-CFS.html">https://www.kernel.org/doc/html/latest/scheduler/sched-design-CFS.html</a></li>
+<li><a target="_blank" rel="noopener" href="https://time.geekbang.org/column/intro/100024701?tab=catalog">https://time.geekbang.org/column/intro/100024701?tab=catalog</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Linux/" rel="tag"><i class="fa fa-tag"></i> Linux</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/07/30/os/linux_process_and_thread/" rel="prev" title="Linux 进程管理(一)：进程和线程">
+                  <i class="fa fa-chevron-left"></i> Linux 进程管理(一)：进程和线程
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/12/06/eBPF/getting-start-with-eBPF/" rel="next" title="eBPF 原理及其应用">
+                  eBPF 原理及其应用 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments gitalk-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">champly</span>
+</div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+      <span>Word count total: </span>
+    <span title="Word count total">80k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span>Reading time total &asymp;</span>
+    <span title="Reading time total">1:13</span>
+  </span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+    </div>
+  </footer>
+
+  
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/champly" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.8/medium-zoom.min.js" integrity="sha256-7PhEpEWEW0XXQ0k6kQrPKwuoIomz8R8IYyuU1Qew4P8=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pangu/4.0.7/pangu.min.js" integrity="sha256-j+yj56cdEY2CwkVtGyz18fNybFGpMGJ8JxG3GSyO2+I=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/9.4.3/mermaid.min.js","integrity":"sha256-e0o3JYsdjqKajf9eOe22FhioYSz9WofRY4dLKo3F6do="}}</script>
+  <script src="/js/third-party/tags/mermaid.js"></script>
+
+
+
+
+  
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/quicklink/2.3.0/quicklink.umd.js" integrity="sha256-yvJQOINiH9fWemHn0vCA5lsHWJaHs6/ZmO+1Ft04SvM=" crossorigin="anonymous"></script>
+  <script class="next-config" data-name="quicklink" type="application/json">{"enable":true,"home":true,"archive":true,"delay":true,"timeout":3000,"priority":true,"url":"http://example.com/2022/07/31/os/linux_task_scheduling/"}</script>
+  <script src="/js/third-party/quicklink.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/gitalk/1.8.0/gitalk.css" integrity="sha256-AJnUHL7dBv6PGaeyPQJcgQPDjt/Hn/PvYZde1iqfp8U=" crossorigin="anonymous">
+
+<script class="next-config" data-name="gitalk" type="application/json">{"enable":true,"github_id":"champly","repo":"champly.github.io","client_id":"e73bf3d8d8c7947be9c2","client_secret":"25256fb151149009db7add5031c73f39a85f608c","admin_user":"champly","distraction_free_mode":true,"proxy":"https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token","language":"en","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/gitalk/1.8.0/gitalk.min.js","integrity":"sha256-MVK9MGD/XJaGyIghSVrONSnoXoGh3IFxLw0zfvzpxR4="},"path_md5":"182d3eb917600e034f43358bf590847e"}</script>
+<script src="/js/third-party/comments/gitalk.js"></script>
+
+
+  <script async src="/js/cursor/fireworks.js"></script>
+
+
+
+
+
+
+
+
+<style>
+	#bgCanvas {
+		background-color: rgba(255,255,255) !important;
+	}
+</style>
+<script type="text/javascript" size="150" alpha="0.6" zindex="-2" src="/js/bg/ribbon.min.js"></script>
+
+
+</body>
+</html>

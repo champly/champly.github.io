@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#02b1e0"><meta name="generator" content="Hexo 6.2.0">
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/logo/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/logo/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/logo/favicon-16x16.png">
+  <link rel="mask-icon" href="/images/logo/favicon.ico" color="#02b1e0">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha256-HtsXJanqjKTc8vVQjO4YMhiqFoXkfBsjBWcX91T1jr8=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.16.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12},"copycode":{"enable":true,"style":"mac"},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"},"path":"/search.json","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":true}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="该文档主要是 mit 6.824 课程的笔记以及一些扩展。  Distributed SystemsDrivens and Challenges分布式系统的核心是通过网络来协调，共同完成一致任务的一些计算机。包括大型网站的存储系统、大数据运算(MapReduce)。在设计一个系统时或者面对一个需要解决的问题时，如果可以在一台计算机上解决，而不需要分布式系统，那就应该用一台计算机解决问题。很多的工">
+<meta property="og:type" content="article">
+<meta property="og:title" content="分布式系统">
+<meta property="og:url" content="http://example.com/2023/05/01/architecture/distributed-systems/index.html">
+<meta property="og:site_name" content="champly">
+<meta property="og:description" content="该文档主要是 mit 6.824 课程的笔记以及一些扩展。  Distributed SystemsDrivens and Challenges分布式系统的核心是通过网络来协调，共同完成一致任务的一些计算机。包括大型网站的存储系统、大数据运算(MapReduce)。在设计一个系统时或者面对一个需要解决的问题时，如果可以在一台计算机上解决，而不需要分布式系统，那就应该用一台计算机解决问题。很多的工">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2023-05-01T01:31:26.000Z">
+<meta property="article:modified_time" content="2023-05-11T05:53:11.746Z">
+<meta property="article:author" content="champly">
+<meta property="article:tag" content="Distributed">
+<meta property="article:tag" content="Raft">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://example.com/2023/05/01/architecture/distributed-systems/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"en","comments":true,"permalink":"http://example.com/2023/05/01/architecture/distributed-systems/","path":"2023/05/01/architecture/distributed-systems/","title":"分布式系统"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>分布式系统 | champly</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<link rel="alternate" href="/atom.xml" title="champly" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">champly</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">To be or not to be is up to you</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags<span class="badge">10</span></a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories<span class="badge">5</span></a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives<span class="badge">7</span></a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup"><div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off" maxlength="80"
+           placeholder="Searching..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close" role="button">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="search-result-container no-result">
+  <div class="search-result-icon">
+    <i class="fa fa-spinner fa-pulse fa-5x"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Distributed-Systems"><span class="nav-number">1.</span> <span class="nav-text">Distributed Systems</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Drivens-and-Challenges"><span class="nav-number">1.1.</span> <span class="nav-text">Drivens and Challenges</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Scalability"><span class="nav-number">1.2.</span> <span class="nav-text">Scalability</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Availability"><span class="nav-number">1.3.</span> <span class="nav-text">Availability</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Consistency"><span class="nav-number">1.4.</span> <span class="nav-text">Consistency</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#CAP"><span class="nav-number">2.</span> <span class="nav-text">CAP</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#MapReduce"><span class="nav-number">3.</span> <span class="nav-text">MapReduce</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Replication"><span class="nav-number">4.</span> <span class="nav-text">Replication</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#State-Transfer"><span class="nav-number">4.1.</span> <span class="nav-text">State Transfer</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Replicated-State-Machine"><span class="nav-number">4.2.</span> <span class="nav-text">Replicated State Machine</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Raft"><span class="nav-number">5.</span> <span class="nav-text">Raft</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Split-Brain"><span class="nav-number">5.1.</span> <span class="nav-text">Split Brain</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#AppendEntries"><span class="nav-number">5.2.</span> <span class="nav-text">AppendEntries</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Leader-Election"><span class="nav-number">5.3.</span> <span class="nav-text">Leader Election</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Election-Restriction"><span class="nav-number">5.4.</span> <span class="nav-text">Election Restriction</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Log-Backup"><span class="nav-number">5.5.</span> <span class="nav-text">Log Backup</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Linearizability"><span class="nav-number">6.</span> <span class="nav-text">Linearizability</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Zookeeper"><span class="nav-number">7.</span> <span class="nav-text">Zookeeper</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Quorum-Replication"><span class="nav-number">8.</span> <span class="nav-text">Quorum Replication</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Distributed-Transaction"><span class="nav-number">9.</span> <span class="nav-text">Distributed Transaction</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Concurrency-Control"><span class="nav-number">9.1.</span> <span class="nav-text">Concurrency Control</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Two-Phase-Commit"><span class="nav-number">9.2.</span> <span class="nav-text">Two-Phase Commit</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="champly"
+      src="/images/themes/logo.jpeg">
+  <p class="site-author-name" itemprop="name">champly</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">7</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/champly" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;champly" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:champly@outlook.com" title="E-Mail → mailto:champly@outlook.com" rel="noopener me" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+<script type="text/javascript" charset="utf-8" src="/js/tagcloud.js"></script>
+<script type="text/javascript" charset="utf-8" src="/js/tagcanvas.js"></script>
+<div class="widget-wrap">
+    <div id="myCanvasContainer" class="widget tagcloud">
+        <canvas width="250" height="250" id="resCanvas" style="width:100%">
+            <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CNI/" rel="tag">CNI</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Distributed/" rel="tag">Distributed</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hexo/" rel="tag">Hexo</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/IPVS/" rel="tag">IPVS</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Kubernetes/" rel="tag">Kubernetes</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux/" rel="tag">Linux</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Next/" rel="tag">Next</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Raft/" rel="tag">Raft</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/eBPF/" rel="tag">eBPF</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/iptables/" rel="tag">iptables</a><span class="tag-list-count">1</span></li></ul>
+        </canvas>
+    </div>
+</div>
+
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2023/05/01/architecture/distributed-systems/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/themes/logo.jpeg">
+      <meta itemprop="name" content="champly">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="champly">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="分布式系统 | champly">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          分布式系统
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2023-05-01 09:31:26" itemprop="dateCreated datePublished" datetime="2023-05-01T09:31:26+08:00">2023-05-01</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-05-11 13:53:11" itemprop="dateModified" datetime="2023-05-11T13:53:11+08:00">2023-05-11</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Architecture/" itemprop="url" rel="index"><span itemprop="name">Architecture</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">Views: </span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="Word count in article">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">Word count in article: </span>
+      <span>11k</span>
+    </span>
+    <span class="post-meta-item" title="Reading time">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">Reading time &asymp;</span>
+      <span>10 mins.</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><blockquote>
+<p>该文档主要是 <a target="_blank" rel="noopener" href="https://mit-public-courses-cn-translatio.gitbook.io/mit6-824">mit 6.824</a> 课程的笔记以及一些扩展。</p>
+</blockquote>
+<h2 id="Distributed-Systems"><a href="#Distributed-Systems" class="headerlink" title="Distributed Systems"></a>Distributed Systems</h2><h3 id="Drivens-and-Challenges"><a href="#Drivens-and-Challenges" class="headerlink" title="Drivens and Challenges"></a>Drivens and Challenges</h3><p>分布式系统的核心是通过网络来协调，共同完成一致任务的一些计算机。包括大型网站的存储系统、大数据运算(MapReduce)。<em>在设计一个系统时或者面对一个需要解决的问题时，如果可以在一台计算机上解决，而不需要分布式系统，那就应该用一台计算机解决问题。很多的工作都可以在一台计算机上完成，并且通常比分布式系统简单很多。所以，在选择使用分布式系统解决问题之前，应该充分尝试别的思路，因为分布式系统会让问题解决变得复杂。</em></p>
+<p>分布式系统会让问题的解决变得复杂，引入分布式系统的驱动力主要是：</p>
+<ul>
+<li>需要获得更高的计算性能：大量的并行运算、大量 CPU、大量内存、以及大量磁盘在并行的运行；</li>
+<li>可以提供容错(tolerate faults)。比如两台计算机运行完全相同的任务，其中一台发生故障，可以切换到另外一台；</li>
+<li>有一些问题天然在空间上就是分布式的。例如银行转账，本身就分布在不同的地域，这就需要一种两者之间协调的方法，所以有一些天然的原因导致系统是物理分布的；</li>
+<li>构建分布式系统来达成一些安全的目标。比如有一些代码并不被信任，但是有需要和它进行交互，这些代码不会立即表现的恶意或者出现 Bug。你不会想要信任这些代码，所以想要将代码分散在多处运行，这样你的代码在另外一台计算机运行，我的代码在我的计算机上运行，通过一些特定的网络协议通信。所以，我们可能会担心安全问题，我们把系统分成多个的计算机，这样可以限制出错域。</li>
+</ul>
+<p>所有的这些分布式系统的问题在于：</p>
+<ul>
+<li>因为系统中存在很多部分，这些部分又在并发执行，会遇到并发编程和各种复杂交互所带来的问题，以及时间依赖的问题（同步、异步）。这让分布式系统变得很难；</li>
+<li>分布式系统有多个组成部分，再加上计算机网络，会遇到一些意想不到的故障。如果只有一台计算机，那么它通常要么是工作，要么是故障或者没电，总的来说，要么是在工作，要么是没有工作。而由多台计算机组成的分布式系统，可能会有一部分组件在工作，而另一部分组件停止运行，或者这些计算机都正常运行，但是网络中断或者不稳定。所以，局部错误也是分布式系统很难的原因；</li>
+<li>人们设计分布式系统的根本原因通常是为了获得更高的性能，比如一千台计算机或者一千个磁盘能达到的性能。但是实际上一千台机器到底有多少性能是一个棘手的问题，这里有很多难点，所以通常需要加倍小心的设计才能让系统达到你期望的性能。</li>
+</ul>
+<h3 id="Scalability"><a href="#Scalability" class="headerlink" title="Scalability"></a>Scalability</h3><p>通常来说，构建分布式系统的目的是为了获取人们常常提到的可扩展的加速。所以，追求的是可扩展性。而这里说的可扩展或者可扩展性指的是，如果用一台计算机解决了一些问题，当买了第二台计算机，只需要一半的时间就可以解决这些问题。两台计算机构成的系统如果两倍性能或者吞吐，就是这里说的可扩展性。</p>
+<p>我们希望可以通过增加机器的方式来实现扩展，但是现实中这很难实现，需要一些架构设计来将这个可扩展性无限推进下去。</p>
+<h3 id="Availability"><a href="#Availability" class="headerlink" title="Availability"></a>Availability</h3><p>如果只使用一台计算机构建系统，那么大概率是可靠的，因为一台计算机通常可以很好的运行很多年，计算机是可靠的，操作系统是可靠的。所以一台计算机正常工作很长时间并不少见，然而如果通过数千台计算机构建系统，对于这么多计算机，也会有很大概率的故障。所以大型分布式系统中有一个大问题，就是一些很罕见的问题会被放大。对于容错，有很多不同的概念可以表述，这些表述中，有一个共同的思想就是可用性。某些系统经过精心的设计，可以在特定的错误类型下，系统仍然能够正常运行，仍然像没有出现错误一样，提供完整的服务。</p>
+<p>除了可用性之外，另一种容错性是自我可恢复性(recoverability)。如果出现了问题，服务会停止工作，不再响应请求，之后有人来修复，并且在修复之后系统仍然可以正常运行，就像没有出现过问题一样。这是一个比可用性更弱的需求，因为在出现故障到故障组件被修复期间，系统将完全停止工作，但是修复之后，系统又可以完全正确的重新运行，所以可恢复性是一个重要的需求。对于一个可恢复的系统，通常需要做一些操作，例如将最新的数据存在磁盘中，这样恢复供电之后，才能将这些数据取回来等。为了实现这些特性，有很多工具。其中最重要的有两个：</p>
+<ul>
+<li>非易失存储（non-volatile storage，类似磁盘）：这样当出现类似的电源故障，甚至整个机房电源故障，可以使用非易失存储。可以存放一些 checkpoint 或者系统状态的 log 在这些存储中，当故障修复之后，可以从硬盘中读出系统最新的状态，并从那个状态继续运行；</li>
+<li>复制(replication)，不过，管理复制的多副本系统会有些棘手。任何一个多副本系统中，都会有一个关键问题，比如我们有两台服务器，本来运行着相同的系统状态，现在的关键问题在于，这两个副本总是会意外的偏离同步的状态，而不再互为副本。对于任何一种使用复制实现的容错系统，都会面临这个问题。</li>
+</ul>
+<h3 id="Consistency"><a href="#Consistency" class="headerlink" title="Consistency"></a>Consistency</h3><p>一致性就是用来定义操作行为的概念。之所以一致性是分布式系统中一个有趣的话题，是因为，从性能和容错的角度来说，我们通常会有多个副本。在一个非分布式系统中，通常只有一个服务器，一个表单。虽然不是绝对，但是通常来说对于 put&#x2F;get 的行为不会有歧义。直观上来说，put 就是更新这个表单，get 就是从表单中获取当前表单中存储的数据，但是在分布式系统中，由于复制或者缓存，数据可能存在于多个副本当中，于是就有了多个不同版本的数据。</p>
+<p>实际上，对于一致性有很多不同的定义。有一些非常直观，比如说 get 请求可以得到最近一次完成的 put 请求写入的值。这种一般也被成为强一致（Strong Consistency）。但是，事实上，构建一个弱一致的系统也是非常有用的。弱一致是指不保证 get 请求可以得到最近一次完成的 put 请求写入的值。虽然强一致可以确保 get 获取的是最新的数据，但是实现这一点代价非常高，几乎可以确定的是，分布式系统的各个组件需要做大量的通信，才能实现强一致性。</p>
+<h2 id="CAP"><a href="#CAP" class="headerlink" title="CAP"></a>CAP</h2><p>CAP 理论对分布式系统的特性做了高度抽象，有三个指标：</p>
+<ul>
+<li>Consistency：一致性强调的不是数据完整，而是各个节点间对数据一致；</li>
+<li>Availability：可用性强调的是服务可用，但不保证数据的一致性；</li>
+<li>Partition Tolerance：分区容错性强调的是集群对分区故障的容错能力。</li>
+</ul>
+<p>CAP 不可能都满足是对于一个分布式系统来说，只能在三个指标中选择其中两个。有网络交互就一定有延迟和数据丢失，而这种情况我们必须接受，还必须保证系统不能挂掉，所以 P 是必须要保证的，剩下的就只能在 C 和 A 中选一个。</p>
+<h2 id="MapReduce"><a href="#MapReduce" class="headerlink" title="MapReduce"></a>MapReduce</h2><p>对于一个完整的 MapReduce Job，它由 Map Task 和一些 Reduce Task 组成:</p>
+<ul>
+<li>Job。整个 MapReduce 计算称为 Job；</li>
+<li>Task。每一次 MapReduce 调用称为 Task。</li>
+</ul>
+<?xml version="1.0" encoding="us-ascii" standalone="no"?><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" contentStyleType="text/css" height="521px" preserveAspectRatio="none" style="width:686px;height:521px;background:#FFFFFF;" version="1.1" viewBox="0 0 686 521" width="686px" zoomAndPan="magnify"><defs/><g><!--entity developer--><g id="elem_developer"><ellipse cx="341.8882" cy="14" fill="#F1F1F1" rx="8" ry="8" style="stroke:#181818;stroke-width:0.5;"/><path d="M341.8882,22 L341.8882,49 M328.8882,30 L354.8882,30 M341.8882,49 L328.8882,64 M341.8882,49 L354.8882,64 " fill="none" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="73" x="305.3882" y="78.4951">developer</text></g><!--entity master--><g id="elem_master"><rect fill="#F1F1F1" height="46.2969" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="91" x="296.3882" y="158.5"/><rect fill="#F1F1F1" height="10" style="stroke:#181818;stroke-width:0.5;" width="15" x="367.3882" y="163.5"/><rect fill="#F1F1F1" height="2" style="stroke:#181818;stroke-width:0.5;" width="4" x="365.3882" y="165.5"/><rect fill="#F1F1F1" height="2" style="stroke:#181818;stroke-width:0.5;" width="4" x="365.3882" y="169.5"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="51" x="311.3882" y="191.4951">master</text></g><!--entity output--><g id="elem_output"><rect fill="#F1F1F1" height="36.2969" rx="35" ry="35" style="stroke:#181818;stroke-width:0.5;" width="69" x="319.3882" y="479.5"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="49" x="329.3882" y="502.4951">output</text></g><!--entity map1--><g id="elem_map1"><polygon fill="#F1F1F1" points="185.3882,275.5,195.3882,265.5,266.3882,265.5,266.3882,301.7969,256.3882,311.7969,185.3882,311.7969,185.3882,275.5" style="stroke:#181818;stroke-width:0.5;"/><line style="stroke:#181818;stroke-width:0.5;" x1="256.3882" x2="266.3882" y1="275.5" y2="265.5"/><line style="stroke:#181818;stroke-width:0.5;" x1="185.3882" x2="256.3882" y1="275.5" y2="275.5"/><line style="stroke:#181818;stroke-width:0.5;" x1="256.3882" x2="256.3882" y1="275.5" y2="311.7969"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="41" x="200.3882" y="298.4951">map1</text></g><!--entity map2--><g id="elem_map2"><polygon fill="#F1F1F1" points="69.8884,275.5,79.8884,265.5,149.8884,265.5,149.8884,301.7969,139.8884,311.7969,69.8884,311.7969,69.8884,275.5" style="stroke:#181818;stroke-width:0.5;"/><line style="stroke:#181818;stroke-width:0.5;" x1="139.8884" x2="149.8884" y1="275.5" y2="265.5"/><line style="stroke:#181818;stroke-width:0.5;" x1="69.8884" x2="139.8884" y1="275.5" y2="275.5"/><line style="stroke:#181818;stroke-width:0.5;" x1="139.8884" x2="139.8884" y1="275.5" y2="311.7969"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="40" x="84.8884" y="298.4951">map2</text></g><!--entity map3--><g id="elem_map3"><polygon fill="#F1F1F1" points="301.3882,275.5,311.3882,265.5,382.3882,265.5,382.3882,301.7969,372.3882,311.7969,301.3882,311.7969,301.3882,275.5" style="stroke:#181818;stroke-width:0.5;"/><line style="stroke:#181818;stroke-width:0.5;" x1="372.3882" x2="382.3882" y1="275.5" y2="265.5"/><line style="stroke:#181818;stroke-width:0.5;" x1="301.3882" x2="372.3882" y1="275.5" y2="275.5"/><line style="stroke:#181818;stroke-width:0.5;" x1="372.3882" x2="372.3882" y1="275.5" y2="311.7969"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="41" x="316.3882" y="298.4951">map3</text></g><!--entity map4--><g id="elem_map4"><polygon fill="#F1F1F1" points="417.8882,275.5,427.8882,265.5,497.8882,265.5,497.8882,301.7969,487.8882,311.7969,417.8882,311.7969,417.8882,275.5" style="stroke:#181818;stroke-width:0.5;"/><line style="stroke:#181818;stroke-width:0.5;" x1="487.8882" x2="497.8882" y1="275.5" y2="265.5"/><line style="stroke:#181818;stroke-width:0.5;" x1="417.8882" x2="487.8882" y1="275.5" y2="275.5"/><line style="stroke:#181818;stroke-width:0.5;" x1="487.8882" x2="487.8882" y1="275.5" y2="311.7969"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="40" x="432.8882" y="298.4951">map4</text></g><!--entity map5--><g id="elem_map5"><polygon fill="#F1F1F1" points="533.3882,275.5,543.3882,265.5,614.3882,265.5,614.3882,301.7969,604.3882,311.7969,533.3882,311.7969,533.3882,275.5" style="stroke:#181818;stroke-width:0.5;"/><line style="stroke:#181818;stroke-width:0.5;" x1="604.3882" x2="614.3882" y1="275.5" y2="265.5"/><line style="stroke:#181818;stroke-width:0.5;" x1="533.3882" x2="604.3882" y1="275.5" y2="275.5"/><line style="stroke:#181818;stroke-width:0.5;" x1="604.3882" x2="604.3882" y1="275.5" y2="311.7969"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="41" x="548.3882" y="298.4951">map5</text></g><!--entity reduce1--><g id="elem_reduce1"><polygon fill="#F1F1F1" points="207.8882,382.5,217.8882,372.5,305.8882,372.5,305.8882,408.7969,295.8882,418.7969,207.8882,418.7969,207.8882,382.5" style="stroke:#181818;stroke-width:0.5;"/><line style="stroke:#181818;stroke-width:0.5;" x1="295.8882" x2="305.8882" y1="382.5" y2="372.5"/><line style="stroke:#181818;stroke-width:0.5;" x1="207.8882" x2="295.8882" y1="382.5" y2="382.5"/><line style="stroke:#181818;stroke-width:0.5;" x1="295.8882" x2="295.8882" y1="382.5" y2="418.7969"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="58" x="222.8882" y="405.4951">reduce1</text></g><!--entity reduce2--><g id="elem_reduce2"><polygon fill="#F1F1F1" points="372.3882,382.5,382.3882,372.5,469.3882,372.5,469.3882,408.7969,459.3882,418.7969,372.3882,418.7969,372.3882,382.5" style="stroke:#181818;stroke-width:0.5;"/><line style="stroke:#181818;stroke-width:0.5;" x1="459.3882" x2="469.3882" y1="382.5" y2="372.5"/><line style="stroke:#181818;stroke-width:0.5;" x1="372.3882" x2="459.3882" y1="382.5" y2="382.5"/><line style="stroke:#181818;stroke-width:0.5;" x1="459.3882" x2="459.3882" y1="382.5" y2="418.7969"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="57" x="387.3882" y="405.4951">reduce2</text></g><!--link developer to master--><g id="link_developer_master"><path d="M341.8882,81.663 C341.8882,104.283 341.8882,132.68 341.8882,153.225 " fill="none" id="developer-to-master" style="stroke:#181818;stroke-width:2.0;"/><polygon fill="#181818" points="341.8882,158.271,345.8882,149.271,341.8882,153.271,337.8882,149.271,341.8882,158.271" style="stroke:#181818;stroke-width:2.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="19" x="342.8882" y="124.5669">job</text></g><!--link master to map1--><g id="link_master_map1"><path d="M317.5712,204.511 C299.1352,221.199 273.7512,244.176 254.3662,261.722 " fill="none" id="master-to-map1" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:1.0,3.0;"/><polygon fill="#181818" points="250.5732,265.156,259.9306,262.0836,254.2808,261.8013,254.5631,256.1515,250.5732,265.156" style="stroke:#181818;stroke-width:1.0;"/></g><!--link master to map2--><g id="link_master_map2"><path d="M296.3292,203.119 C255.3712,221.657 195.5552,248.729 154.7972,267.175 " fill="none" id="master-to-map2" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:1.0,3.0;"/><polygon fill="#181818" points="149.9242,269.381,159.7728,269.3138,154.4793,267.3192,156.4739,262.0257,149.9242,269.381" style="stroke:#181818;stroke-width:1.0;"/></g><!--link master to map3--><g id="link_master_map3"><path d="M341.8882,204.511 C341.8882,220.643 341.8882,242.651 341.8882,259.95 " fill="none" id="master-to-map3" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:1.0,3.0;"/><polygon fill="#181818" points="341.8882,265.156,345.8882,256.156,341.8882,260.156,337.8882,256.156,341.8882,265.156" style="stroke:#181818;stroke-width:1.0;"/></g><!--link master to map4--><g id="link_master_map4"><path d="M366.2062,204.511 C384.6412,221.199 410.0252,244.176 429.4102,261.722 " fill="none" id="master-to-map4" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:1.0,3.0;"/><polygon fill="#181818" points="433.2032,265.156,429.2152,256.1507,429.4963,261.8005,423.8465,262.0817,433.2032,265.156" style="stroke:#181818;stroke-width:1.0;"/></g><!--link master to map5--><g id="link_master_map5"><path d="M387.4472,203.119 C428.1522,221.542 487.4822,248.394 528.2202,266.831 " fill="none" id="master-to-map5" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:1.0,3.0;"/><polygon fill="#181818" points="533.0942,269.037,526.5436,261.6824,528.5389,266.9757,523.2456,268.971,533.0942,269.037" style="stroke:#181818;stroke-width:1.0;"/></g><!--link master to reduce1--><g id="link_master_reduce1"><path d="M296.1692,188.863 C222.1412,200.207 81.3265,226.455 51.8884,265.5 C6,326.364 127.8816,365.713 202.9502,383.5 " fill="none" id="master-to-reduce1" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:1.0,3.0;"/><polygon fill="#181818" points="207.8242,384.64,199.9715,378.6956,202.9556,383.5014,198.1498,386.4855,207.8242,384.64" style="stroke:#181818;stroke-width:1.0;"/></g><!--link master to reduce2--><g id="link_master_reduce2"><path d="M387.6072,188.863 C461.6362,200.207 602.4502,226.455 631.8882,265.5 C679.1222,328.149 551.4102,367.088 474.4452,384.245 " fill="none" id="master-to-reduce2" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:1.0,3.0;"/><polygon fill="#181818" points="469.4512,385.343,479.1005,387.3157,474.3344,384.2686,477.3815,379.5026,469.4512,385.343" style="stroke:#181818;stroke-width:1.0;"/></g><!--link map1 to reduce1--><g id="link_map1_reduce1"><path d="M230.2282,311.58 C232.2802,321.156 234.9292,332.455 237.8882,342.5 C240.3172,350.746 243.3682,359.577 246.3102,367.578 " fill="none" id="map1-to-reduce1" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="248.1212,372.44,248.7301,362.61,246.3769,367.7541,241.2327,365.4009,248.1212,372.44" style="stroke:#181818;stroke-width:1.0;"/></g><!--link map1 to reduce2--><g id="link_map1_reduce2"><path d="M266.5692,305.16 C303.7812,319.542 353.6832,338.994 357.8882,341.5 C370.7932,349.189 383.7192,359.497 394.4752,368.977 " fill="none" id="map1-to-reduce2" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="398.3352,372.427,394.289,363.4477,394.6067,369.0956,388.9588,369.4133,398.3352,372.427" style="stroke:#181818;stroke-width:1.0;"/></g><!--link map2 to reduce1--><g id="link_map2_reduce1"><path d="M140.7044,311.511 C164.3412,328.395 196.9912,351.716 221.6622,369.338 " fill="none" id="map2-to-reduce1" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="225.8602,372.337,220.861,363.8513,221.7913,369.4311,216.2115,370.3614,225.8602,372.337" style="stroke:#181818;stroke-width:1.0;"/></g><!--link map2 to reduce2--><g id="link_map2_reduce2"><path d="M150.0512,305.005 C156.0152,307.229 162.1012,309.454 167.8882,311.5 C236.2882,335.678 315.9062,361.405 367.2822,377.695 " fill="none" id="map2-to-reduce2" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="372.1642,379.241,364.7922,372.71,367.3976,377.7312,362.3765,380.3366,372.1642,379.241" style="stroke:#181818;stroke-width:1.0;"/></g><!--link map3 to reduce1--><g id="link_map3_reduce1"><path d="M308.9652,311.707 C298.3262,320.089 287.1562,330.328 278.8882,341.5 C273.1382,349.27 268.5862,358.765 265.1502,367.559 " fill="none" id="map3-to-reduce1" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="263.3562,372.358,270.2555,365.3295,265.1077,367.6748,262.7624,362.5271,263.3562,372.358" style="stroke:#181818;stroke-width:1.0;"/></g><!--link map3 to reduce2--><g id="link_map3_reduce2"><path d="M371.0132,311.684 C380.8072,320.206 391.1892,330.539 398.8882,341.5 C404.3962,349.342 408.8712,358.773 412.3112,367.492 " fill="none" id="map3-to-reduce2" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="414.1162,372.248,414.6646,362.4144,412.3431,367.573,407.1845,365.2514,414.1162,372.248" style="stroke:#181818;stroke-width:1.0;"/></g><!--link map4 to reduce1--><g id="link_map4_reduce1"><path d="M417.6962,310.496 C384.8032,327.679 338.2342,352.006 303.6702,370.062 " fill="none" id="map4-to-reduce1" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="299.0892,372.455,308.9184,371.8332,303.5209,370.1399,305.2142,364.7424,299.0892,372.455" style="stroke:#181818;stroke-width:1.0;"/></g><!--link map4 to reduce2--><g id="link_map4_reduce2"><path d="M450.4692,311.716 C447.2642,321.215 443.4412,332.419 439.8882,342.5 C437.0312,350.607 433.8512,359.397 430.9222,367.402 " fill="none" id="map4-to-reduce2" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="429.1372,372.272,435.9913,365.1994,430.8586,367.5777,428.4803,362.4451,429.1372,372.272" style="stroke:#181818;stroke-width:1.0;"/></g><!--link map5 to reduce1--><g id="link_map5_reduce1"><path d="M533.1102,305.275 C527.3462,307.415 521.4802,309.545 515.8882,311.5 C445.7222,336.031 363.9122,361.778 311.3122,377.969 " fill="none" id="map5-to-reduce1" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="306.3142,379.506,316.0925,380.683,311.0932,378.0359,313.7403,373.0366,306.3142,379.506" style="stroke:#181818;stroke-width:1.0;"/></g><!--link map5 to reduce2--><g id="link_map5_reduce2"><path d="M560.7872,311.663 C553.8112,322.043 544.4842,333.97 533.8882,342.5 C516.2902,356.667 494.2052,367.939 474.2382,376.316 " fill="none" id="map5-to-reduce2" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="469.4802,378.275,479.3253,378.5482,474.1038,376.3718,476.2802,371.1504,469.4802,378.275" style="stroke:#181818;stroke-width:1.0;"/></g><!--link reduce1 to output--><g id="link_reduce1_output"><path d="M278.4162,418.6932 C294.9172,435.7046 317.5252,459.0126 333.6872,475.6737 " fill="none" id="reduce1-to-output" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="337.2372,479.3343,333.8416,470.0893,333.7557,475.7455,328.0995,475.6597,337.2372,479.3343" style="stroke:#181818;stroke-width:1.0;"/></g><!--link reduce2 to output--><g id="link_reduce2_output"><path d="M406.0192,418.6932 C394.8132,435.4187 379.5292,458.2309 368.4082,474.828 " fill="none" id="reduce2-to-output" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="365.3892,479.3343,373.7225,474.0848,368.1728,475.1808,367.0768,469.6311,365.3892,479.3343" style="stroke:#181818;stroke-width:1.0;"/></g><!--SRC=[TP5B3eCm30NtFeKlm89yDfNW8bKNb5YLge8ZQdh-GaaZiCZkUTv4jfIk5vumq8TU76c2deV88us2G_UM1RoNldiGyYnn5e2H0orTh7CoETcSN4u-FPaep3tL-y40vCNOD6rQUS4dtm6s0QjhO14AjwhTrfvpK-2sm5s1-zF5_-EBbLcVnHghWtm0wuNHQCDemsh3QiDfmsd3QyCV34ZD3wP_JTqEVG40]--></g></svg>
+
+<p>MapReduce 展示了一个分布式系统的可扩展性。</p>
+<h2 id="Replication"><a href="#Replication" class="headerlink" title="Replication"></a>Replication</h2><p>容错本身是为了提高可用性，当想构建一个服务时，尽管计算机硬件总是有可能故障，但是我们还是希望能稳定的提供服务，甚至出现了网络问题我们还是想能够提供服务。使用到的工具就是复制。最简单的方法来描述复制能处理的故障，就是单台计算机的 fail-stop 故障。不能解决软件中的 Bug 和硬件设计中的缺陷，还有另外一种情况，比如自然灾害，摧毁了整个数据中心，无论有多少副本都无济于事。如果我们想处理类似的问题，就需要将副本放在不同的城市，或者物理上把它们分开（同城双活、两地三中心架构）。另一个有关复制的问题是，这种复制的方案是否值得？这个不是一个可从技术上来回答的问题，这是一个经济上的问题，取决于一个可用服务的价值。</p>
+<blockquote>
+<p>所以任何技术都不是银弹，都是需要根据实际情况进行抉择和取舍。</p>
+</blockquote>
+<h3 id="State-Transfer"><a href="#State-Transfer" class="headerlink" title="State Transfer"></a>State Transfer</h3><p>状态转移背后的思想是，Primary 将自己完整状态，比如内存中的内容，拷贝并发送给 Backup。Backup 会保存收到的最近一次状态，所以 Backup 会有所有的数据。当 Primary 故障了，Backup 就可以从它所保存的最新状态开始运行。所以，状态转移就是发送Primary 的状态。</p>
+<h3 id="Replicated-State-Machine"><a href="#Replicated-State-Machine" class="headerlink" title="Replicated State Machine"></a>Replicated State Machine</h3><p>复制状态机基于这个事实：我们想复制的大部分的服务或者计算机软件都有一些确定的内部操作，不确定的部分是外部输入。通常情况下，如果一台计算机没有外部影响，它只是一个接一个的执行命令，每条指令执行的是计算机中的内存和寄存器上的确定函数，只有当外部事件干预时，才会发生一些预期之外的事。例如某个随机事件收到了一个网络数据包，导致服务做了一些不同的事情。所以，复制状态机不会在不同的副本之间发送状态，相应的，它只会从 Primary 将这些外部事件，例如外部的输入，发送给 Backup。通常来说，如果有两台计算机，如果他们从相同的状态开始，并且它们以相同的顺序，在相同的事件，看到了相同的输入，那么它们会一直互为副本，并且保持一致。</p>
+<blockquote>
+<p>所以状态转移传输的可能是内存，而复制状态机会将来自客户端的操作或者其他外部事件，从 Primary 传输到 Backup。</p>
+</blockquote>
+<p>人们倾向于使用复制状态机的原因是，通常来说，外部操作或者事件比服务的状态要小。</p>
+<h2 id="Raft"><a href="#Raft" class="headerlink" title="Raft"></a>Raft</h2><h3 id="Split-Brain"><a href="#Split-Brain" class="headerlink" title="Split Brain"></a>Split Brain</h3><p>尽管存在脑裂的可能，但是随着技术的发展，人们发现就算网络出现故障，可能出现分区，实际上是可以正确的实现能够自动完成故障切换的系统。当网络出现故障，将网络分割成两半，网络的两边独立运行，且不能访问对方，这通常被称为网络分区。在构建能自动恢复，同时又避免脑裂的多副本系统时，人们发现，关键点在于过半票决（Majority Vote）。</p>
+<p>过半票决系统第一步在于，服务器的数量要是奇数，而不是偶数。在任何时候为了完成任何操作，必须凑够过半的服务器来批准相应的操作。</p>
+<blockquote>
+<p>如果系统有 2*F + 1 个服务器，那么系统最多可以接受 F 个服务器出现故障，仍然可以正常工作。</p>
+</blockquote>
+<p><a target="_blank" rel="noopener" href="http://www.kailing.pub/raft/index.html">raft 共识算法动画演示</a></p>
+<h3 id="AppendEntries"><a href="#AppendEntries" class="headerlink" title="AppendEntries"></a>AppendEntries</h3><?xml version="1.0" encoding="us-ascii" standalone="no"?><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" contentStyleType="text/css" height="649px" preserveAspectRatio="none" style="width:852px;height:649px;background:#FFFFFF;" version="1.1" viewBox="0 0 852 649" width="852px" zoomAndPan="magnify"><defs/><g><rect fill="none" height="388.7266" style="stroke:#000000;stroke-width:1.5;" width="785.5" x="61" y="127.4297"/><rect fill="none" height="175.7969" style="stroke:#000000;stroke-width:1.5;" width="526.5" x="71" y="151.5625"/><rect fill="none" height="167.7969" style="stroke:#000000;stroke-width:1.5;" width="765.5" x="71" y="341.3594"/><line style="stroke:#181818;stroke-width:0.5;stroke-dasharray:5.0,5.0;" x1="29" x2="29" y1="81.2969" y2="568.2891"/><line style="stroke:#181818;stroke-width:0.5;stroke-dasharray:5.0,5.0;" x1="112" x2="112" y1="81.2969" y2="568.2891"/><line style="stroke:#181818;stroke-width:0.5;stroke-dasharray:5.0,5.0;" x1="229" x2="229" y1="81.2969" y2="568.2891"/><line style="stroke:#181818;stroke-width:0.5;stroke-dasharray:5.0,5.0;" x1="348.5" x2="348.5" y1="81.2969" y2="568.2891"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="43" x="5" y="77.9951">Client</text><ellipse cx="29.5" cy="13.5" fill="#E2E2F0" rx="8" ry="8" style="stroke:#181818;stroke-width:0.5;"/><path d="M29.5,21.5 L29.5,48.5 M16.5,29.5 L42.5,29.5 M29.5,48.5 L16.5,63.5 M29.5,48.5 L42.5,63.5 " fill="none" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="43" x="5" y="580.2842">Client</text><ellipse cx="29.5" cy="592.0859" fill="#E2E2F0" rx="8" ry="8" style="stroke:#181818;stroke-width:0.5;"/><path d="M29.5,600.0859 L29.5,627.0859 M16.5,608.0859 L42.5,608.0859 M29.5,627.0859 L16.5,642.0859 M29.5,627.0859 L42.5,642.0859 " fill="none" style="stroke:#181818;stroke-width:0.5;"/><rect fill="#E2E2F0" height="30.2969" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="63" x="81" y="50"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="49" x="88" y="69.9951">Leader</text><rect fill="#E2E2F0" height="30.2969" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="63" x="81" y="567.2891"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="49" x="88" y="587.2842">Leader</text><rect fill="#E2E2F0" height="30.2969" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="83" x="188" y="50"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="69" x="195" y="69.9951">Follower1</text><rect fill="#E2E2F0" height="30.2969" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="83" x="188" y="567.2891"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="69" x="195" y="587.2842">Follower1</text><rect fill="#E2E2F0" height="30.2969" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="82" x="307.5" y="50"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="68" x="314.5" y="69.9951">Follower2</text><rect fill="#E2E2F0" height="30.2969" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="82" x="307.5" y="567.2891"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="68" x="314.5" y="587.2842">Follower2</text><polygon fill="#181818" points="100.5,108.4297,110.5,112.4297,100.5,116.4297,104.5,112.4297" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="29.5" x2="106.5" y1="112.4297" y2="112.4297"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="49" x="36.5" y="107.3638">request</text><path d="M61,127.4297 L137,127.4297 L137,134.5625 L127,144.5625 L61,144.5625 L61,127.4297 " fill="#EEEEEE" style="stroke:#000000;stroke-width:1.5;"/><rect fill="none" height="388.7266" style="stroke:#000000;stroke-width:1.5;" width="785.5" x="61" y="127.4297"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="31" x="76" y="140.4966">raft</text><path d="M71,151.5625 L225,151.5625 L225,158.6953 L215,168.6953 L71,168.6953 L71,151.5625 " fill="#EEEEEE" style="stroke:#000000;stroke-width:1.5;"/><rect fill="none" height="175.7969" style="stroke:#000000;stroke-width:1.5;" width="526.5" x="71" y="151.5625"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="109" x="86" y="164.6294">AppendEntries</text><polygon fill="#181818" points="217.5,185.8281,227.5,189.8281,217.5,193.8281,221.5,189.8281" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="112.5" x2="223.5" y1="189.8281" y2="189.8281"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="93" x="119.5" y="184.7622">AppendEntries</text><polygon fill="#181818" points="336.5,214.9609,346.5,218.9609,336.5,222.9609,340.5,218.9609" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="112.5" x2="342.5" y1="218.9609" y2="218.9609"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="93" x="119.5" y="213.895">AppendEntries</text><polygon fill="#181818" points="123.5,244.0938,113.5,248.0938,123.5,252.0938,119.5,248.0938" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="117.5" x2="228.5" y1="248.0938" y2="248.0938"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="23" x="129.5" y="243.0278">Ack</text><polygon fill="#181818" points="123.5,273.2266,113.5,277.2266,123.5,281.2266,119.5,277.2266" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="117.5" x2="347.5" y1="277.2266" y2="277.2266"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="23" x="129.5" y="272.1606">Ack</text><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="112.5" x2="154.5" y1="306.3594" y2="306.3594"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="154.5" x2="154.5" y1="306.3594" y2="319.3594"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="113.5" x2="154.5" y1="319.3594" y2="319.3594"/><polygon fill="#181818" points="123.5,315.3594,113.5,319.3594,123.5,323.3594,119.5,319.3594" style="stroke:#181818;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="29" x="119.5" y="301.2935">Wait</text><path d="M162,293.7266 L162,318.7266 L582,318.7266 L582,303.7266 L572,293.7266 L162,293.7266 " fill="#FFAAAA" style="stroke:#181818;stroke-width:0.5;"/><path d="M572,293.7266 L572,303.7266 L582,303.7266 L572,293.7266 " fill="#FFAAAA" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="399" x="168" y="310.7935">&#31561;&#24453;&#36807;&#21322;&#33410;&#28857;&#21709;&#24212;&#65288;&#21253;&#25324;&#33258;&#24049;&#65289;&#65292;&#36825;&#37324;&#21482;&#38656;&#35201;&#31561;&#24453;&#19968;&#20010; Follower &#21709;&#24212;</text><path d="M71,341.3594 L174,341.3594 L174,348.4922 L164,358.4922 L71,358.4922 L71,341.3594 " fill="#EEEEEE" style="stroke:#000000;stroke-width:1.5;"/><rect fill="none" height="167.7969" style="stroke:#000000;stroke-width:1.5;" width="765.5" x="71" y="341.3594"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="58" x="86" y="354.4263">commit</text><polygon fill="#181818" points="217.5,375.625,227.5,379.625,217.5,383.625,221.5,379.625" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="112.5" x2="223.5" y1="379.625" y2="379.625"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="93" x="119.5" y="374.5591">AppendEntries</text><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="229.5" x2="271.5" y1="412.8242" y2="412.8242"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="271.5" x2="271.5" y1="412.8242" y2="425.8242"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="230.5" x2="271.5" y1="425.8242" y2="425.8242"/><polygon fill="#181818" points="240.5,421.8242,230.5,425.8242,240.5,429.8242,236.5,425.8242" style="stroke:#181818;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="105" x="236.5" y="407.7583">judge commit ID</text><path d="M353,392.625 L353,432.625 L821,432.625 L821,402.625 L811,392.625 L353,392.625 " fill="#FEFFDD" style="stroke:#181818;stroke-width:0.5;"/><path d="M811,392.625 L811,402.625 L821,402.625 L811,392.625 " fill="#FEFFDD" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="296" x="359" y="409.6919">Leader &#20250;&#23558;&#26356;&#22823;&#30340; commit ID &#21457;&#36865;&#32473; Follower&#65292;</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="447" x="359" y="424.8247">&#24403;&#20854;&#20182;&#21103;&#26412;&#25910;&#21040;&#20102;&#36825;&#20010;&#28040;&#24687;&#23601;&#30693;&#36947;&#20043;&#21069;&#25552;&#20132;&#30340; commit &#21495;&#24050;&#32463;&#34987; Leader &#25552;&#20132;</text><polygon fill="#181818" points="336.5,455.0234,346.5,459.0234,336.5,463.0234,340.5,459.0234" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="112.5" x2="342.5" y1="459.0234" y2="459.0234"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="93" x="119.5" y="453.9575">AppendEntries</text><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="348.5" x2="390.5" y1="488.1563" y2="488.1563"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="390.5" x2="390.5" y1="488.1563" y2="501.1563"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="349.5" x2="390.5" y1="501.1563" y2="501.1563"/><polygon fill="#181818" points="359.5,497.1563,349.5,501.1563,359.5,505.1563,355.5,501.1563" style="stroke:#181818;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="105" x="355.5" y="483.0903">judge commit ID</text><polygon fill="#181818" points="40.5,543.2891,30.5,547.2891,40.5,551.2891,36.5,547.2891" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="34.5" x2="111.5" y1="547.2891" y2="547.2891"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="59" x="46.5" y="542.2231">response</text><path d="M117,528.1563 L117,553.1563 L559,553.1563 L559,538.1563 L549,528.1563 L117,528.1563 " fill="#FEFFDD" style="stroke:#181818;stroke-width:0.5;"/><path d="M549,528.1563 L549,538.1563 L559,538.1563 L549,528.1563 " fill="#FEFFDD" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="421" x="123" y="545.2231">&#31561;&#24453; commit &#36820;&#22238;&#20449;&#24687;&#65292;&#22914;&#26524;&#26377;&#36807;&#21322;&#33410;&#28857;&#21709;&#24212;&#65292;&#21017;&#36820;&#22238;&#25104;&#21151;&#65292;&#21542;&#21017;&#20250;&#37325;&#35797;</text><!--SRC=[dLF1Rjf04BtlLwpKSmxbs4Car1OfKkyzMx2bRedjBejw1LI2JK2cWaGYGObIfKGYYI1L1GdGyZEUjNtY5xh6nh65ApMTsyw-UM_cpQwKPIh5BmioKHZI9ChahAn92iDlY9GZD9RAg8M2-fdGvudP548-3TxPsGtAyGjCoQSIAJAKfsf9mrHwnn0MuH_JcaQKt6k5KPaKrtalWbgF9fGKJFyCJlqL_4WNwp6T_RW5IMr3aZH3m5j9PY50KHd1LCw_P_XP9fCM4LvvOTyQyBlcBElGQZYDgbrzW4uBPjtLGeTcZH_UEFKXJEzM2sErQ3hBdbjlWZbq-sLdKF5hhVkoTJyCcyL-VIWYHb_tW883YdYULVVt8wq-oUouVr7yXr8kJm9klFSgmOcO0u6gjJY1yG4__GcNL_R9byTw3EPNjronvxrGHLWHeu1V7QXDhFan62FUl-7T2UXZQtOW_1BMy8dEAoCOtzddtzrAnteu1AF5pROrkum8WJc5wGzxRZhVhZSz-Q1aA__xmQMsy4c6UPjQRokY4VmfxoCLDLKf4XInr7yC6nPdsONJCsjv8IONRi6Woi_wl6yaFRGcw3qVp_KsDCwzJ7iWac8bRhtbZ8xGPl8_]--></g></svg>
+
+<h3 id="Leader-Election"><a href="#Leader-Election" class="headerlink" title="Leader Election"></a>Leader Election</h3><?xml version="1.0" encoding="us-ascii" standalone="no"?><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" contentStyleType="text/css" height="323px" preserveAspectRatio="none" style="width:561px;height:323px;background:#FFFFFF;" version="1.1" viewBox="0 0 561 323" width="561px" zoomAndPan="magnify"><defs/><g><g id="Follower"><rect fill="#F1F1F1" height="50" rx="12.5" ry="12.5" style="stroke:#181818;stroke-width:0.5;" width="80" x="122.9699" y="13.276"/><line style="stroke:#181818;stroke-width:0.5;" x1="122.9699" x2="202.9699" y1="39.5729" y2="39.5729"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="60" x="132.9699" y="31.2711">Follower</text></g><g id="Candidate"><rect fill="#F1F1F1" height="50" rx="12.5" ry="12.5" style="stroke:#181818;stroke-width:0.5;" width="93" x="100.4699" y="140.276"/><line style="stroke:#181818;stroke-width:0.5;" x1="100.4699" x2="193.4699" y1="166.5729" y2="166.5729"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="73" x="110.4699" y="158.2711">Candidate</text></g><g id="Leader"><rect fill="#F1F1F1" height="50" rx="12.5" ry="12.5" style="stroke:#181818;stroke-width:0.5;" width="69" x="284.4699" y="267.276"/><line style="stroke:#181818;stroke-width:0.5;" x1="284.4699" x2="353.4699" y1="293.5729" y2="293.5729"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="49" x="294.4699" y="285.2711">Leader</text></g><ellipse cx="23.9699" cy="38.276" fill="#181818" rx="10" ry="10" style="stroke:none;stroke-width:1.0;"/><!--link *start* to Follower--><g id="link_*start*_Follower"><path d="M34.4175,38.276 C51.9049,38.276 88.0925,38.276 117.6309,38.276 " fill="none" id="*start*-to-Follower" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="122.6849,38.276,113.6849,34.276,117.6849,38.276,113.6849,42.276,122.6849,38.276" style="stroke:#181818;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="52" x="52.4699" y="31.3429">&#21021;&#22987;&#29366;&#24577;</text></g><!--link Follower to Candidate--><g id="link_Follower_Candidate"><path d="M122.6969,43.278 C90.8141,48.804 48.2308,61.959 26.9699,93.276 C6,124.165 53.8527,143.605 95.2131,154.18 " fill="none" id="Follower-to-Candidate" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="100.2198,155.426,92.4518,149.3713,95.3677,154.2188,90.5202,157.1346,100.2198,155.426" style="stroke:#181818;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="91" x="27.9699" y="106.3429">&#36229;&#26102;&#65292;&#24320;&#22987;&#36873;&#20030;</text></g><!--link Candidate to Follower--><g id="link_Candidate_Follower"><path d="M150.0449,140.249 C152.6659,119.779 156.4389,90.297 159.2329,68.47 " fill="none" id="Candidate-to-Follower" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="159.8849,63.377,154.7755,71.7969,159.2506,68.3366,162.7109,72.8117,159.8849,63.377" style="stroke:#181818;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="236" x="156.9699" y="106.3429">&#20986;&#29616; Leader &#25110;&#32773;&#20986;&#29616;&#26356;&#39640;&#30340;&#20219;&#26399;(term)</text></g><!--link Candidate to Candidate--><g id="link_Candidate_Candidate"><path d="M193.8709,153.722 C212.6809,153.069 228.4699,156.921 228.4699,165.276 C228.4699,172.848 215.5029,176.721 199.0709,176.895 " fill="none" id="Candidate-to-Candidate" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="193.8709,176.83,202.8198,180.9429,198.8705,176.8929,202.9204,172.9435,193.8709,176.83" style="stroke:#181818;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="130" x="234.4699" y="169.8429">&#36229;&#26102;&#65292;&#36827;&#34892;&#26032;&#19968;&#36718;&#36873;&#20030;</text></g><!--link Candidate to Leader--><g id="link_Candidate_Leader"><path d="M180.1329,190.377 C209.1629,211.474 251.3059,242.1019 281.5379,264.0722 " fill="none" id="Candidate-to-Leader" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="285.9079,267.2487,280.9797,258.7215,281.8634,264.3089,276.276,265.1926,285.9079,267.2487" style="stroke:#181818;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="117" x="244.9699" y="233.3429">&#25910;&#21040;&#36807;&#21322;&#26381;&#21153;&#30340;&#25237;&#31080;</text></g><!--link Leader to Follower--><g id="link_Leader_Follower"><path d="M347.4589,267.1905 C356.1289,258.5536 364.9469,248.2231 370.9699,237.276 C498.2109,6 424.1239,120.994 401.9699,93.276 C378.2039,63.541 270.8589,48.99 208.4109,42.925 " fill="none" id="Leader-to-Follower" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="203.2529,42.433,211.8329,47.2685,208.2303,42.9072,212.5916,39.3046,203.2529,42.433" style="stroke:#181818;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="132" x="421.9699" y="169.8429">&#25910;&#21040;&#26356;&#39640;&#30340;&#20219;&#26399;(term)</text></g><!--SRC=[Aov9B4bLSClFoSalJotYAWPpdHFpKZ9JW2metoSrCGKeoHMj5QkWQmTNhM2byBHZxjFbtS-xjZrhQEI2Y-i25S7D0AfwiQtrsVHjx_VqFDtJ05J-ig7poOvzN0WLEDM_s3_xnSAUPzCsFDdHy6BlEgmQ8Ou3wdesPTlJZWqlzhS_xUrwDgVtQTV2vxDQddLDVRvq1HTKaIwgwo4wditUydBr3A3Q9xjtFvipNwCajIXN4yqIP2-txthUjm5cxREEQIyQMY5YM0q20000]--></g></svg>
+
+<ul>
+<li>系统启动时，默认都是 Follower 状态，初始化时会随机赋予一个时间(150~300ms)，当超时之后会转换为 Candidate 状态，发起一轮投票；</li>
+<li>Candidate 是选主过程中的中间状态，只有大多数 Follower 投票通过时，才会转换为 Leader；</li>
+<li>如果 Candidate 选主超时，则会发起新一轮选主过程（当前 term 会加一）；</li>
+<li>如果 Candidate 收到 Leader 发来的信息时，会转换为 Follower；</li>
+<li>Follower 在一个任期（term）过程中，只会给一个 Candidate 投票，投票之后会重置超时时间；</li>
+<li>Candidate 和 Leader 在发现更大的任期时，都会转换为 Follower。</li>
+</ul>
+<h3 id="Election-Restriction"><a href="#Election-Restriction" class="headerlink" title="Election Restriction"></a>Election Restriction</h3><p>Follower 只能向满足下面条件之一的 Candidate 投票:</p>
+<ul>
+<li>Candidate 最后一条 Log 条目的任期号大于本地最后一条 Log 条目的任期号；</li>
+<li>Candidate 最后一条 Log 条目的任期号等于本地最后一条 Log 条目的任期号，并且 Candidate 的 Log 长度大于或等于本地 Log 记录的长度。</li>
+</ul>
+<h3 id="Log-Backup"><a href="#Log-Backup" class="headerlink" title="Log Backup"></a>Log Backup</h3><p>Leader 中的日志只能追加，Leader 会强制让 Follower 的数据和自己保持一致。Leader 为每个 Follower 维护了 nextIndex，nextIndex 的初始值是从新任的最后一条日志开始。AppendEntries 消息包含了 prevLogIndex 和 prevLogTerm 字段，这样的 AppendEntries 消息发送给了 Follower。而 Follower 它们在收到 AppendEntries 消息时，可以知道它们收到一个带有若干 Log 条目的消息，Follower 在写入 Log 之前，会检查本地的前一个 Log 条目，是否与 Leader 发来的 prevLogIndex 信息匹配。如果不匹配，Followers 会拒绝。为了响应 Follower 返回的拒绝，Leader 会减少对应的 nextIndex，直到匹配，才会把数据写入本地（新增或者修改）。</p>
+<p>这样一个一个回退的过程太慢了，可以让 Follower 在返回消息的时候多返回一些信息，就可以加速恢复：</p>
+<ul>
+<li>XTerm：这个是 Follower 中与 Leader 冲突的 Log 对应的任期号，如果 Follower 在对应位置的任期号不匹配，它会拒绝 Leader 的 AppendEntries 消息，并将自己的任期号放在 XTerm 中。如果 Follower 在对应位置没有 Log，那么会返回 -1；</li>
+<li>XIndex：这个是 Follower 中，对应任期号为 XTerm 的第一条 Log 条目的槽位号；</li>
+<li>XLen：如果 Follower 在对应位置没有 Log，那么 XTerm 会返回 -1，XLen 表示空白的 Log 槽位数。</li>
+</ul>
+<p>还可以通过日志快照（Log Snapshot）的方式来快速恢复：当 Follower 刚恢复，如果它的 Log 已经很滞后了，那么它会首先强制 Leader 回退自己的 Log，在某个点，Leader 将不能再回退，因为已经到了自己 Log 的起点，这个时候 Leader 会将自己的快照发给 Follower，滞后立即通过 AppendEntries 将后面的 Log 发给 Follower。</p>
+<h2 id="Linearizability"><a href="#Linearizability" class="headerlink" title="Linearizability"></a>Linearizability</h2><p>通常来说，线性一致等价于强一致，一个服务是线性一致的，那么它表现的就像只有一个服务器，并且服务器没有故障，这个服务器每次执行一个客户端请求，并且没有什么奇怪的事情发生。要达到线性一致性，我们现在要确定顺序，对于这个顺序，有两个限制条件：</p>
+<ul>
+<li>如果一个操作在另一个操作开始前就结束了，那么这个操作必须在执行历史中出现在另一个操作前面；</li>
+<li>执行历史中，读操作，必须在相应的 key 的写操作之后。</li>
+</ul>
+<p>如果我们能构建这么一个序列，那么可以证明，这里的请求历史记录是线性的，必须同时满足：</p>
+<ul>
+<li>序列中的请求的顺序与实际时间匹配；</li>
+<li>每个读请求看到的都是序列中前一个写请求写入的值。</li>
+</ul>
+<h2 id="Zookeeper"><a href="#Zookeeper" class="headerlink" title="Zookeeper"></a>Zookeeper</h2><p>相比 Raft 来说，Raft 实际上就是一个库。可以在更大的多副本系统中使用 Raft 库。但是 Raft 不是一个你可以直接交互的独立服务，你必须要设计你自己的应用程序来与 Raft 库交互。Zookeeper 作为一个多副本系统，是一个容错的、通用的协调服务，它与其他系统一样，通过多副本来完成容错。</p>
+<p>Zookeeper 和 Raft 类似，先发出 Log 条目之后，当 Leader 收到了过半服务器当回复，Leader 就会发送 commit 消息。Zookeeper 的读性能随着服务器数量的增加而显著的增加。所以很明显，Zookeeper 在这里有一些修改使得读请求可以由其他副本来处理。那么 Zookeeper 是如何确保这里的读请求是安全的（线性一致）？</p>
+<p>实际上，Zookeeper 并不要求返回最新的写入数据。Zookeeper 的方式是，放弃线性一致性，不提供线性一致的读。所以 Zookeeper 也不用为读请求提供最新的数据，它由自己有关一致性的定义，而这个定义不是线性一致的，因此允许读请求返回旧的数据。所以 Zookeeper 这里声明自己最开始就不支持线性一致性，来解决这里的技术问题。如果不提供这个能力，那么读请求返回旧的数据。这里实际上是一种经典的解决性能和强一致之间矛盾的方法，也就是不提供强一致。</p>
+<p>这里的工作原理是，每个 Log 条目都会被 Leader 打上 zxid 的标签，这些标签就是 Log 对应的条目号。任何时候一个副本回复一个客户端的读请求，首先这个读请求是在 Log 的某个特定点执行的，其次回复里面会带上 zxid，对应的就是 Log 执行点的前一条 Log 条目。客户端会记住最高 zxid，当客户端发出一个请求到一个相同或者不同的副本时，它会在它的请求中带上这个最高的 zxid。这样，其他副本就知道，应该至少在 Log 中这个点或者之后执行读请求。那么在获取到对应这个位置的 Log 之前，这个副本是不能响应客户端请求。</p>
+<h2 id="Quorum-Replication"><a href="#Quorum-Replication" class="headerlink" title="Quorum Replication"></a>Quorum Replication</h2><p>假设有 N 个副本，为了能够执行写请求，必须要确保写操作被 W 个副本确认，W 小于 N。所以你需要将写入请求发送到这 W 个副本。如果要执行读请求，那么至少需要从 R 个副本得到所读取的信息。这里的 W 对应的数字成为 Write Quorum，R 对应的数字成为 Read Quorum。Quorum 系统要求，任意你要发送写请求的 W 个服务器，必须与任意接受读取请求的 R 个服务器由重叠。意味着，<code>R + W</code> 必须大于 N（至少满足 <code>R + W = N + 1</code>）。这样任意 W 个服务器至少与任意 R 个服务器有一个重合。</p>
+<p>还有一个关键点，客户端读取请求可能会得到 R 个不同的结果，需要通过最高版本号（Version）的数值作为结果。当 R 为 1 时，写请求就不再是容错的了，W 为 1 时，读请求不再是容错的，都必须要求所有的服务器在线。</p>
+<blockquote>
+<p>可以通过调整 W 和 R 来提升服务的写性能或者读性能。</p>
+</blockquote>
+<h2 id="Distributed-Transaction"><a href="#Distributed-Transaction" class="headerlink" title="Distributed Transaction"></a>Distributed Transaction</h2><p>可以这么理解事务：程序员有一些不同的操作，或许针对数据库不同记录，他们希望所有这些操作作为一个整体，不会因为失败而被分割，也不会被其他活动看到中间状态。事务处理系统要求程序员对这些读操作、写操作标明起始和结束，这样才能知道事务起始和结束。事务处理系统可以保证在事务的开始和结束之间的行为是可预期的。数据库通常对于正确性有一个概念称为 ACID:</p>
+<ul>
+<li>Atomic，原子性。意味着事务可能有多个步骤，比如写多个数据记录，尽管可能存在故障，但是要么所有的写数据都完成了，要么没有写数据能完成。不应该发生类似的这种情况：在一个特定的时间发生了故障，导致事务中一半的写数据完成并可见，另一半的写数据没有完成，这里要么全有，要么全没有（All or Nothing）；</li>
+<li>Consistent，一致性。它通常是指数据库会强制某些应用程序定义的数据不变；</li>
+<li>Isolated，隔离性。这是一个属性，表明两个同时运行的事务，在事务结束前，能不能看到彼此的更新，能不能看到另一个事务中间的临时的更新。目标是不能，隔离在技术上的具体体现是，事务需要串行执行。事务不能看到彼此之间的中间状态，只能看到完成的事务结果；</li>
+<li>Durable，持久化。意味着在事务提交之后，数据库中的修改是持久化的，不会应为一些错误而被擦除。这意味着数据要被写入到一些非易失的存储（Non-Volatile Storage），持久化的存储，例如磁盘。</li>
+</ul>
+<p>通常来说，隔离性意味着可序列化（Serializable）。它的定义是如果在同一时间并行的事务，那么可以生成一系列的结果。这里的结果包含：</p>
+<ul>
+<li>由任何事务中的修改行为产生的数据库记录的修改；</li>
+<li>任何事务生成的输出。</li>
+</ul>
+<p>我们说可序列化是指，并行的执行一些事务得到的结果，与按照某种串行的顺序来执行这些事务，可以得到相同的结果。实际的执行过程或许有大量的并行处理，但是这里要求得到的结果与按照某种顺序一次一个事务的串行执行结果是一样的。所以，如果检查一个并发事务执行是否是可序列化的，可以查看结果，并看看是否可以找到对于同一些事务，存在一次只执行一个事务的顺序，按照这个顺序执行可以生成相同的结果。</p>
+<blockquote>
+<p>现实中隔离性要看数据库配置的隔离级别: <a target="_blank" rel="noopener" href="https://cloud.tencent.com/developer/beta/article/1833688">数据库事务隔离级别</a>。</p>
+</blockquote>
+<h3 id="Concurrency-Control"><a href="#Concurrency-Control" class="headerlink" title="Concurrency Control"></a>Concurrency Control</h3><p>在并发控制中，主要有两种策略:</p>
+<ul>
+<li>悲观并发控制（Pessimistic Concurrency Control）: 在事务使用任何数据之前，它需要获得数据的锁，如果有一些其他的事务已经在使用这里的数据，锁会被它们持有，当前事务必须等待这些事务结束，之后当前事务才能获取到锁。在悲观系统中，如果由锁冲突，就会造成延时等待；</li>
+<li>乐观并发控制（Optimistic Concurrency Control）: 基本思想是，你不用担心其他事务是否正在读写你要使用的数据，你直接继续执行你的读写操作，通常来说这些执行会在一些临时区域，只有在事务最后的时候，再检查是不是有一些其他事务干扰了你。如果没有就可以完成事务，并且不需要承受锁带来的性能损耗，因为操作锁的代价一般都比较高；如果有一些其他的事务在同一时间修改了你关心的数据，造成了冲突，那么就必须 Abort 掉当前事务，并重试。</li>
+</ul>
+<p>具体使用哪种策略应该取决于不同的环境，如果冲突非常频繁，或许用悲观并发控制更好一些。悲观控制的锁就是两阶段锁（Two-Phase Locking）。</p>
+<h3 id="Two-Phase-Commit"><a href="#Two-Phase-Commit" class="headerlink" title="Two-Phase Commit"></a>Two-Phase Commit</h3><?xml version="1.0" encoding="us-ascii" standalone="no"?><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" contentStyleType="text/css" height="1334px" preserveAspectRatio="none" style="width:417px;height:1334px;background:#FFFFFF;" version="1.1" viewBox="0 0 417 1334" width="417px" zoomAndPan="magnify"><defs/><g><rect fill="none" height="145.3359" style="stroke:#000000;stroke-width:1.5;" width="220.5" x="170" y="98.2969"/><rect fill="none" height="191.9297" style="stroke:#000000;stroke-width:1.5;" width="220.5" x="170" y="257.6328"/><rect fill="#90EE90" height="773.125" style="stroke:#000000;stroke-width:1.5;" width="400.5" x="10" y="463.5625"/><rect fill="none" height="356.5938" style="stroke:#000000;stroke-width:1.5;" width="380.5" x="20" y="487.6953"/><rect fill="none" height="75.3984" style="stroke:#000000;stroke-width:1.5;" width="152.5" x="170" y="583.0938"/><rect fill="none" height="75.3984" style="stroke:#000000;stroke-width:1.5;" width="186.5" x="170" y="672.4922"/><rect fill="none" height="75.3984" style="stroke:#000000;stroke-width:1.5;" width="220.5" x="170" y="761.8906"/><rect fill="#FFC0CB" height="385.3984" style="stroke:none;stroke-width:1.0;" width="400.5" x="10" y="851.2891"/><rect fill="none" height="356.5938" style="stroke:#000000;stroke-width:1.5;" width="380.5" x="20" y="873.0938"/><rect fill="none" height="75.3984" style="stroke:#000000;stroke-width:1.5;" width="152.5" x="170" y="968.4922"/><rect fill="none" height="75.3984" style="stroke:#000000;stroke-width:1.5;" width="186.5" x="170" y="1057.8906"/><rect fill="none" height="75.3984" style="stroke:#000000;stroke-width:1.5;" width="220.5" x="170" y="1147.2891"/><line style="stroke:#181818;stroke-width:0.5;stroke-dasharray:5.0,5.0;" x1="54" x2="54" y1="81.2969" y2="202.8281"/><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:1.0,4.0;" x1="54" x2="54" y1="202.8281" y2="243.6328"/><line style="stroke:#181818;stroke-width:0.5;stroke-dasharray:5.0,5.0;" x1="54" x2="54" y1="243.6328" y2="1253.6875"/><line style="stroke:#181818;stroke-width:0.5;stroke-dasharray:5.0,5.0;" x1="196" x2="196" y1="81.2969" y2="202.8281"/><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:1.0,4.0;" x1="196" x2="196" y1="202.8281" y2="243.6328"/><line style="stroke:#181818;stroke-width:0.5;stroke-dasharray:5.0,5.0;" x1="196" x2="196" y1="243.6328" y2="1253.6875"/><line style="stroke:#181818;stroke-width:0.5;stroke-dasharray:5.0,5.0;" x1="300.5" x2="300.5" y1="81.2969" y2="202.8281"/><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:1.0,4.0;" x1="300.5" x2="300.5" y1="202.8281" y2="243.6328"/><line style="stroke:#181818;stroke-width:0.5;stroke-dasharray:5.0,5.0;" x1="300.5" x2="300.5" y1="243.6328" y2="1253.6875"/><line style="stroke:#181818;stroke-width:0.5;stroke-dasharray:5.0,5.0;" x1="334.5" x2="334.5" y1="81.2969" y2="202.8281"/><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:1.0,4.0;" x1="334.5" x2="334.5" y1="202.8281" y2="243.6328"/><line style="stroke:#181818;stroke-width:0.5;stroke-dasharray:5.0,5.0;" x1="334.5" x2="334.5" y1="243.6328" y2="1253.6875"/><line style="stroke:#181818;stroke-width:0.5;stroke-dasharray:5.0,5.0;" x1="368.5" x2="368.5" y1="81.2969" y2="202.8281"/><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:1.0,4.0;" x1="368.5" x2="368.5" y1="202.8281" y2="243.6328"/><line style="stroke:#181818;stroke-width:0.5;stroke-dasharray:5.0,5.0;" x1="368.5" x2="368.5" y1="243.6328" y2="1253.6875"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="43" x="30" y="77.9951">Client</text><ellipse cx="54.5" cy="13.5" fill="#E2E2F0" rx="8" ry="8" style="stroke:#181818;stroke-width:0.5;"/><path d="M54.5,21.5 L54.5,48.5 M41.5,29.5 L67.5,29.5 M54.5,48.5 L41.5,63.5 M54.5,48.5 L67.5,63.5 " fill="none" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="43" x="30" y="1265.6826">Client</text><ellipse cx="54.5" cy="1277.4844" fill="#E2E2F0" rx="8" ry="8" style="stroke:#181818;stroke-width:0.5;"/><path d="M54.5,1285.4844 L54.5,1312.4844 M41.5,1293.4844 L67.5,1293.4844 M54.5,1312.4844 L41.5,1327.4844 M54.5,1312.4844 L67.5,1327.4844 " fill="none" style="stroke:#181818;stroke-width:0.5;"/><rect fill="#E2E2F0" height="30.2969" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="33" x="180" y="50"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="19" x="187" y="69.9951">TC</text><rect fill="#E2E2F0" height="30.2969" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="33" x="180" y="1252.6875"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="19" x="187" y="1272.6826">TC</text><rect fill="#E2E2F0" height="30.2969" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="24" x="288.5" y="50"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="10" x="295.5" y="69.9951">A</text><rect fill="#E2E2F0" height="30.2969" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="24" x="288.5" y="1252.6875"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="10" x="295.5" y="1272.6826">A</text><rect fill="#E2E2F0" height="30.2969" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="24" x="322.5" y="50"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="10" x="329.5" y="69.9951">B</text><rect fill="#E2E2F0" height="30.2969" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="24" x="322.5" y="1252.6875"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="10" x="329.5" y="1272.6826">B</text><rect fill="#E2E2F0" height="30.2969" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="24" x="356.5" y="50"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="10" x="363.5" y="69.9951">C</text><rect fill="#E2E2F0" height="30.2969" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="24" x="356.5" y="1252.6875"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="10" x="363.5" y="1272.6826">C</text><path d="M170,98.2969 L284,98.2969 L284,105.4297 L274,115.4297 L170,115.4297 L170,98.2969 " fill="#EEEEEE" style="stroke:#000000;stroke-width:1.5;"/><rect fill="none" height="145.3359" style="stroke:#000000;stroke-width:1.5;" width="220.5" x="170" y="98.2969"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="69" x="185" y="111.3638">operator</text><polygon fill="#181818" points="288.5,132.5625,298.5,136.5625,288.5,140.5625,292.5,136.5625" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="196.5" x2="294.5" y1="136.5625" y2="136.5625"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="21" x="203.5" y="131.4966">get</text><polygon fill="#181818" points="322.5,161.6953,332.5,165.6953,322.5,169.6953,326.5,165.6953" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="196.5" x2="328.5" y1="165.6953" y2="165.6953"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="20" x="203.5" y="160.6294">set</text><polygon fill="#181818" points="356.5,190.8281,366.5,194.8281,356.5,198.8281,360.5,194.8281" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="196.5" x2="362.5" y1="194.8281" y2="194.8281"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="20" x="203.5" y="189.7622">set</text><text fill="#000000" font-family="sans-serif" font-size="11" lengthAdjust="spacing" textLength="80" x="171.5" y="227.0386">multi operator</text><path d="M170,257.6328 L274,257.6328 L274,264.7656 L264,274.7656 L170,274.7656 L170,257.6328 " fill="#EEEEEE" style="stroke:#000000;stroke-width:1.5;"/><rect fill="none" height="191.9297" style="stroke:#000000;stroke-width:1.5;" width="220.5" x="170" y="257.6328"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="59" x="185" y="270.6997">prepare</text><polygon fill="#181818" points="288.5,291.8984,298.5,295.8984,288.5,299.8984,292.5,295.8984" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="196.5" x2="294.5" y1="295.8984" y2="295.8984"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="50" x="203.5" y="290.8325">Prepare</text><polygon fill="#181818" points="207.5,321.0313,197.5,325.0313,207.5,329.0313,203.5,325.0313" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="201.5" x2="299.5" y1="325.0313" y2="325.0313"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="44" x="213.5" y="319.9653">Yes/No</text><polygon fill="#181818" points="322.5,350.1641,332.5,354.1641,322.5,358.1641,326.5,354.1641" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="196.5" x2="328.5" y1="354.1641" y2="354.1641"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="50" x="203.5" y="349.0981">Prepare</text><polygon fill="#181818" points="207.5,379.2969,197.5,383.2969,207.5,387.2969,203.5,383.2969" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="201.5" x2="333.5" y1="383.2969" y2="383.2969"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="44" x="213.5" y="378.231">Yes/No</text><polygon fill="#181818" points="356.5,408.4297,366.5,412.4297,356.5,416.4297,360.5,412.4297" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="196.5" x2="362.5" y1="412.4297" y2="412.4297"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="50" x="203.5" y="407.3638">Prepare</text><polygon fill="#181818" points="207.5,437.5625,197.5,441.5625,207.5,445.5625,203.5,441.5625" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="201.5" x2="367.5" y1="441.5625" y2="441.5625"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="44" x="213.5" y="436.4966">Yes/No</text><path d="M10,463.5625 L76,463.5625 L76,470.6953 L66,480.6953 L10,480.6953 L10,463.5625 " fill="#EEEEEE" style="stroke:#000000;stroke-width:1.5;"/><rect fill="none" height="773.125" style="stroke:#000000;stroke-width:1.5;" width="400.5" x="10" y="463.5625"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="21" x="25" y="476.6294">alt</text><text fill="#000000" font-family="sans-serif" font-size="11" font-weight="bold" lengthAdjust="spacing" textLength="125" x="91" y="475.7729">[&#25152;&#26377;&#30340;&#32467;&#26524;&#37117;&#36820;&#22238; Yes]</text><path d="M20,487.6953 L123,487.6953 L123,494.8281 L113,504.8281 L20,504.8281 L20,487.6953 " fill="#EEEEEE" style="stroke:#000000;stroke-width:1.5;"/><rect fill="none" height="356.5938" style="stroke:#000000;stroke-width:1.5;" width="380.5" x="20" y="487.6953"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="58" x="35" y="500.7622">commit</text><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="196.5" x2="238.5" y1="525.9609" y2="525.9609"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="238.5" x2="238.5" y1="525.9609" y2="538.9609"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="197.5" x2="238.5" y1="538.9609" y2="538.9609"/><polygon fill="#181818" points="207.5,534.9609,197.5,538.9609,207.5,542.9609,203.5,538.9609" style="stroke:#181818;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="90" x="203.5" y="520.895">Commit(WAL)</text><polygon fill="#181818" points="65.5,564.0938,55.5,568.0938,65.5,572.0938,61.5,568.0938" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="59.5" x2="195.5" y1="568.0938" y2="568.0938"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="118" x="71.5" y="563.0278">Response Commit</text><path d="M170,583.0938 L248,583.0938 L248,590.2266 L238,600.2266 L170,600.2266 L170,583.0938 " fill="#EEEEEE" style="stroke:#000000;stroke-width:1.5;"/><rect fill="none" height="75.3984" style="stroke:#000000;stroke-width:1.5;" width="152.5" x="170" y="583.0938"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="33" x="185" y="596.1606">loop</text><polygon fill="#181818" points="288.5,617.3594,298.5,621.3594,288.5,625.3594,292.5,621.3594" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="196.5" x2="294.5" y1="621.3594" y2="621.3594"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="51" x="203.5" y="616.2935">Commit</text><polygon fill="#181818" points="207.5,646.4922,197.5,650.4922,207.5,654.4922,203.5,650.4922" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="201.5" x2="299.5" y1="650.4922" y2="650.4922"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="23" x="213.5" y="645.4263">Ack</text><path d="M170,672.4922 L248,672.4922 L248,679.625 L238,689.625 L170,689.625 L170,672.4922 " fill="#EEEEEE" style="stroke:#000000;stroke-width:1.5;"/><rect fill="none" height="75.3984" style="stroke:#000000;stroke-width:1.5;" width="186.5" x="170" y="672.4922"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="33" x="185" y="685.5591">loop</text><polygon fill="#181818" points="322.5,706.7578,332.5,710.7578,322.5,714.7578,326.5,710.7578" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="196.5" x2="328.5" y1="710.7578" y2="710.7578"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="51" x="203.5" y="705.6919">Commit</text><polygon fill="#181818" points="207.5,735.8906,197.5,739.8906,207.5,743.8906,203.5,739.8906" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="201.5" x2="333.5" y1="739.8906" y2="739.8906"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="23" x="213.5" y="734.8247">Ack</text><path d="M170,761.8906 L248,761.8906 L248,769.0234 L238,779.0234 L170,779.0234 L170,761.8906 " fill="#EEEEEE" style="stroke:#000000;stroke-width:1.5;"/><rect fill="none" height="75.3984" style="stroke:#000000;stroke-width:1.5;" width="220.5" x="170" y="761.8906"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="33" x="185" y="774.9575">loop</text><polygon fill="#181818" points="356.5,796.1563,366.5,800.1563,356.5,804.1563,360.5,800.1563" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="196.5" x2="362.5" y1="800.1563" y2="800.1563"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="51" x="203.5" y="795.0903">Commit</text><polygon fill="#181818" points="207.5,825.2891,197.5,829.2891,207.5,833.2891,203.5,829.2891" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="201.5" x2="367.5" y1="829.2891" y2="829.2891"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="23" x="213.5" y="824.2231">Ack</text><line style="stroke:#000000;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="10" x2="410.5" y1="852.2891" y2="852.2891"/><text fill="#000000" font-family="sans-serif" font-size="11" font-weight="bold" lengthAdjust="spacing" textLength="131" x="15" y="862.4995">[&#33267;&#23569;&#26377;&#19968;&#20010;&#32467;&#26524;&#36820;&#22238; No]</text><path d="M20,873.0938 L108,873.0938 L108,880.2266 L98,890.2266 L20,890.2266 L20,873.0938 " fill="#EEEEEE" style="stroke:#000000;stroke-width:1.5;"/><rect fill="none" height="356.5938" style="stroke:#000000;stroke-width:1.5;" width="380.5" x="20" y="873.0938"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="43" x="35" y="886.1606">abort</text><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="196.5" x2="238.5" y1="911.3594" y2="911.3594"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="238.5" x2="238.5" y1="911.3594" y2="924.3594"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="197.5" x2="238.5" y1="924.3594" y2="924.3594"/><polygon fill="#181818" points="207.5,920.3594,197.5,924.3594,207.5,928.3594,203.5,924.3594" style="stroke:#181818;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="74" x="203.5" y="906.2935">Abort(WAL)</text><polygon fill="#181818" points="65.5,949.4922,55.5,953.4922,65.5,957.4922,61.5,953.4922" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="59.5" x2="195.5" y1="953.4922" y2="953.4922"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="102" x="71.5" y="948.4263">Response Abort</text><path d="M170,968.4922 L248,968.4922 L248,975.625 L238,985.625 L170,985.625 L170,968.4922 " fill="#EEEEEE" style="stroke:#000000;stroke-width:1.5;"/><rect fill="none" height="75.3984" style="stroke:#000000;stroke-width:1.5;" width="152.5" x="170" y="968.4922"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="33" x="185" y="981.5591">loop</text><polygon fill="#181818" points="288.5,1002.7578,298.5,1006.7578,288.5,1010.7578,292.5,1006.7578" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="196.5" x2="294.5" y1="1006.7578" y2="1006.7578"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="35" x="203.5" y="1001.6919">Abort</text><polygon fill="#181818" points="207.5,1031.8906,197.5,1035.8906,207.5,1039.8906,203.5,1035.8906" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="201.5" x2="299.5" y1="1035.8906" y2="1035.8906"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="23" x="213.5" y="1030.8247">Ack</text><path d="M170,1057.8906 L248,1057.8906 L248,1065.0234 L238,1075.0234 L170,1075.0234 L170,1057.8906 " fill="#EEEEEE" style="stroke:#000000;stroke-width:1.5;"/><rect fill="none" height="75.3984" style="stroke:#000000;stroke-width:1.5;" width="186.5" x="170" y="1057.8906"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="33" x="185" y="1070.9575">loop</text><polygon fill="#181818" points="322.5,1092.1563,332.5,1096.1563,322.5,1100.1563,326.5,1096.1563" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="196.5" x2="328.5" y1="1096.1563" y2="1096.1563"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="35" x="203.5" y="1091.0903">Abort</text><polygon fill="#181818" points="207.5,1121.2891,197.5,1125.2891,207.5,1129.2891,203.5,1125.2891" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="201.5" x2="333.5" y1="1125.2891" y2="1125.2891"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="23" x="213.5" y="1120.2231">Ack</text><path d="M170,1147.2891 L248,1147.2891 L248,1154.4219 L238,1164.4219 L170,1164.4219 L170,1147.2891 " fill="#EEEEEE" style="stroke:#000000;stroke-width:1.5;"/><rect fill="none" height="75.3984" style="stroke:#000000;stroke-width:1.5;" width="220.5" x="170" y="1147.2891"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="33" x="185" y="1160.356">loop</text><polygon fill="#181818" points="356.5,1181.5547,366.5,1185.5547,356.5,1189.5547,360.5,1185.5547" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="196.5" x2="362.5" y1="1185.5547" y2="1185.5547"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="35" x="203.5" y="1180.4888">Abort</text><polygon fill="#181818" points="207.5,1210.6875,197.5,1214.6875,207.5,1218.6875,203.5,1214.6875" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="201.5" x2="367.5" y1="1214.6875" y2="1214.6875"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="23" x="213.5" y="1209.6216">Ack</text><!--SRC=[hP51IyCm68Rl_HM1NVImUlSWf3bu6JAa81vh5sfOcuGqkmyKP4VHauxz04-2bu68VsRhjdzXsjJIf6KMN2_bUxytpvTyRn1A9W2A2QRIuO6G92Gye1Buo2YXKNb6XHmd4cp20UDO18hd0FNv2FJxPm22Kn1XMPSy9QMcX6gIwxeWcSIILBnSSZ0T_SxX0glvs1uphCcmKFsSUutJamjcNw1kzlQPaML63NDnio2Me3SWqQqy5nXJaCscsNosURdVV3vbY_dkxclx_Rn-NUI72ev-IiYIXEXtrsOMT5IqZgxWuDZkwxoKvnAddD4Kb-RAf-4nOxoIh6LP1woTmN1SjVBdTUDwxLpllrpKpaNxkVaVnsetlI6XOx1z-5Y_FwfCLilfQlccOoapAHFNjmXkc6XF1EQTZe50W_9t7gR_O74qiGT9eudj4WOT_G00]--></g></svg>
+
+<p>有一些关键点：</p>
+<ul>
+<li>一旦回复 Prepare 消息为 Yes 之后，就不能结束事务，必须等待 TC 进行协调；回复 No 之后可以直接 Abort 掉本地事务;</li>
+<li>本地没有对应的 Abort 事务也要返回 Ack 信息。</li>
+</ul>
+<hr>
+<p>参考链接:</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://mit-public-courses-cn-translatio.gitbook.io/mit6-824">https://mit-public-courses-cn-translatio.gitbook.io/mit6-824</a></li>
+<li><a target="_blank" rel="noopener" href="http://www.kailing.pub/raft/index.html">http://www.kailing.pub/raft/index.html</a></li>
+<li><a target="_blank" rel="noopener" href="https://sineyuan.github.io/post/etcd-raft-source-guide/">https://sineyuan.github.io/post/etcd-raft-source-guide/</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/etcd-io/raft">https://github.com/etcd-io/raft</a></li>
+<li><a target="_blank" rel="noopener" href="https://raft.github.io/">https://raft.github.io/</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/goraft/raft">https://github.com/goraft/raft</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/hashicorp/raft">https://github.com/hashicorp/raft</a></li>
+<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/49792009">https://zhuanlan.zhihu.com/p/49792009</a></li>
+<li><a target="_blank" rel="noopener" href="http://www.zhaowenyu.com/etcd-doc/introduction/what-is-raft.html">http://www.zhaowenyu.com/etcd-doc/introduction/what-is-raft.html</a></li>
+<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/91288179">https://zhuanlan.zhihu.com/p/91288179</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.qq.com/doc/DY0VxSkVGWHFYSlZJ?_t=1609557593539">https://docs.qq.com/doc/DY0VxSkVGWHFYSlZJ?_t&#x3D;1609557593539</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.open-open.com/lib/view/open1328763454608.html">https://www.open-open.com/lib/view/open1328763454608.html</a></li>
+<li><a target="_blank" rel="noopener" href="https://ms2008.github.io/2019/12/04/etcd-rumor/">https://ms2008.github.io/2019/12/04/etcd-rumor/</a></li>
+<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/152105666">https://zhuanlan.zhihu.com/p/152105666</a></li>
+<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/524885008">https://zhuanlan.zhihu.com/p/524885008</a></li>
+<li><a target="_blank" rel="noopener" href="https://t1mek1ller.github.io/2018/03/01/raft/">https://t1mek1ller.github.io/2018/03/01/raft/</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.jianshu.com/p/ce47091ccd5b">https://www.jianshu.com/p/ce47091ccd5b</a></li>
+<li><a target="_blank" rel="noopener" href="https://cloud.tencent.com/developer/beta/article/1833688">https://cloud.tencent.com/developer/beta/article/1833688</a></li>
+<li><a target="_blank" rel="noopener" href="https://cloud.tencent.com/developer/beta/article/1450773">https://cloud.tencent.com/developer/beta/article/1450773</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Distributed/" rel="tag"><i class="fa fa-tag"></i> Distributed</a>
+              <a href="/tags/Raft/" rel="tag"><i class="fa fa-tag"></i> Raft</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/12/06/eBPF/getting-start-with-eBPF/" rel="prev" title="eBPF 原理及其应用">
+                  <i class="fa fa-chevron-left"></i> eBPF 原理及其应用
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments gitalk-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">champly</span>
+</div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+      <span>Word count total: </span>
+    <span title="Word count total">80k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span>Reading time total &asymp;</span>
+    <span title="Reading time total">1:13</span>
+  </span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+    </div>
+  </footer>
+
+  
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/champly" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.8/medium-zoom.min.js" integrity="sha256-7PhEpEWEW0XXQ0k6kQrPKwuoIomz8R8IYyuU1Qew4P8=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pangu/4.0.7/pangu.min.js" integrity="sha256-j+yj56cdEY2CwkVtGyz18fNybFGpMGJ8JxG3GSyO2+I=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/9.4.3/mermaid.min.js","integrity":"sha256-e0o3JYsdjqKajf9eOe22FhioYSz9WofRY4dLKo3F6do="}}</script>
+  <script src="/js/third-party/tags/mermaid.js"></script>
+
+
+
+
+  
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/quicklink/2.3.0/quicklink.umd.js" integrity="sha256-yvJQOINiH9fWemHn0vCA5lsHWJaHs6/ZmO+1Ft04SvM=" crossorigin="anonymous"></script>
+  <script class="next-config" data-name="quicklink" type="application/json">{"enable":true,"home":true,"archive":true,"delay":true,"timeout":3000,"priority":true,"url":"http://example.com/2023/05/01/architecture/distributed-systems/"}</script>
+  <script src="/js/third-party/quicklink.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/gitalk/1.8.0/gitalk.css" integrity="sha256-AJnUHL7dBv6PGaeyPQJcgQPDjt/Hn/PvYZde1iqfp8U=" crossorigin="anonymous">
+
+<script class="next-config" data-name="gitalk" type="application/json">{"enable":true,"github_id":"champly","repo":"champly.github.io","client_id":"e73bf3d8d8c7947be9c2","client_secret":"25256fb151149009db7add5031c73f39a85f608c","admin_user":"champly","distraction_free_mode":true,"proxy":"https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token","language":"en","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/gitalk/1.8.0/gitalk.min.js","integrity":"sha256-MVK9MGD/XJaGyIghSVrONSnoXoGh3IFxLw0zfvzpxR4="},"path_md5":"2b00237486464f718406aed1507b23a6"}</script>
+<script src="/js/third-party/comments/gitalk.js"></script>
+
+
+  <script async src="/js/cursor/fireworks.js"></script>
+
+
+
+
+
+
+
+
+<style>
+	#bgCanvas {
+		background-color: rgba(255,255,255) !important;
+	}
+</style>
+<script type="text/javascript" size="150" alpha="0.6" zindex="-2" src="/js/bg/ribbon.min.js"></script>
+
+
+</body>
+</html>

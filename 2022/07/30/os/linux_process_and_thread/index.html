@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#02b1e0"><meta name="generator" content="Hexo 6.2.0">
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/logo/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/logo/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/logo/favicon-16x16.png">
+  <link rel="mask-icon" href="/images/logo/favicon.ico" color="#02b1e0">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha256-HtsXJanqjKTc8vVQjO4YMhiqFoXkfBsjBWcX91T1jr8=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.16.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12},"copycode":{"enable":true,"style":"mac"},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"},"path":"/search.json","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":true}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="Linux 进程和线程 进程进程的定义如下:  进程（Process）是指计算机已执行的程序，用户下达执行进程的命令后，就会产生进程。同一个程序可以产生多个进程（一对多），以允许同时有多个用户执行同一个程序，却不会相互冲突。进程需要一些资源才能完成工作，比如 CPU、内存、存储、文件以及 I&#x2F;O 设备等。  这里说的程序，一般都是 ELF 格式的可执行文件。 ELF">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux 进程管理(一)：进程和线程">
+<meta property="og:url" content="http://example.com/2022/07/30/os/linux_process_and_thread/index.html">
+<meta property="og:site_name" content="champly">
+<meta property="og:description" content="Linux 进程和线程 进程进程的定义如下:  进程（Process）是指计算机已执行的程序，用户下达执行进程的命令后，就会产生进程。同一个程序可以产生多个进程（一对多），以允许同时有多个用户执行同一个程序，却不会相互冲突。进程需要一些资源才能完成工作，比如 CPU、内存、存储、文件以及 I&#x2F;O 设备等。  这里说的程序，一般都是 ELF 格式的可执行文件。 ELF">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/images/os/linux_process_and_thread/stack.jpeg">
+<meta property="article:published_time" content="2022-07-30T00:06:22.000Z">
+<meta property="article:modified_time" content="2023-05-11T05:53:11.750Z">
+<meta property="article:author" content="champly">
+<meta property="article:tag" content="Linux">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/os/linux_process_and_thread/stack.jpeg">
+
+
+<link rel="canonical" href="http://example.com/2022/07/30/os/linux_process_and_thread/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"en","comments":true,"permalink":"http://example.com/2022/07/30/os/linux_process_and_thread/","path":"2022/07/30/os/linux_process_and_thread/","title":"Linux 进程管理(一)：进程和线程"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Linux 进程管理(一)：进程和线程 | champly</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<link rel="alternate" href="/atom.xml" title="champly" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">champly</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">To be or not to be is up to you</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags<span class="badge">10</span></a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories<span class="badge">5</span></a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives<span class="badge">7</span></a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup"><div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off" maxlength="80"
+           placeholder="Searching..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close" role="button">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="search-result-container no-result">
+  <div class="search-result-icon">
+    <i class="fa fa-spinner fa-pulse fa-5x"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B"><span class="nav-number">1.</span> <span class="nav-text">进程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#ELF"><span class="nav-number">1.1.</span> <span class="nav-text">ELF</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8F%AF%E9%87%8D%E5%AE%9A%E4%BD%8D%E6%96%87%E4%BB%B6"><span class="nav-number">1.1.1.</span> <span class="nav-text">可重定位文件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8F%AF%E6%89%A7%E8%A1%8C%E6%96%87%E4%BB%B6"><span class="nav-number">1.1.2.</span> <span class="nav-text">可执行文件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%85%B1%E4%BA%AB%E5%AF%B9%E8%B1%A1%E6%96%87%E4%BB%B6"><span class="nav-number">1.1.3.</span> <span class="nav-text">共享对象文件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%85%E6%A0%B8%E8%BD%AC%E5%82%A8"><span class="nav-number">1.1.4.</span> <span class="nav-text">内核转储</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8%E8%BF%9B%E7%A8%8B"><span class="nav-number">1.2.</span> <span class="nav-text">启动进程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E8%BF%9B%E7%A8%8B"><span class="nav-number">1.3.</span> <span class="nav-text">创建进程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%89%B9%E6%AE%8A%E8%BF%9B%E7%A8%8B"><span class="nav-number">1.4.</span> <span class="nav-text">特殊进程</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#0-%E5%8F%B7%E8%BF%9B%E7%A8%8B"><span class="nav-number">1.4.1.</span> <span class="nav-text">0 号进程</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-%E5%8F%B7%E8%BF%9B%E7%A8%8B"><span class="nav-number">1.4.2.</span> <span class="nav-text">1 号进程</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-%E5%8F%B7%E8%BF%9B%E7%A8%8B"><span class="nav-number">1.4.3.</span> <span class="nav-text">2 号进程</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B"><span class="nav-number">2.</span> <span class="nav-text">线程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E6%9C%89%E7%BA%BF%E7%A8%8B"><span class="nav-number">2.1.</span> <span class="nav-text">为什么要有线程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E7%BA%BF%E7%A8%8B"><span class="nav-number">2.2.</span> <span class="nav-text">创建线程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE"><span class="nav-number">2.3.</span> <span class="nav-text">数据</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9C%AC%E5%9C%B0%E6%95%B0%E6%8D%AE"><span class="nav-number">2.3.1.</span> <span class="nav-text">本地数据</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%85%A8%E5%B1%80%E6%95%B0%E6%8D%AE"><span class="nav-number">2.3.2.</span> <span class="nav-text">全局数据</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%A7%81%E6%9C%89%E6%95%B0%E6%8D%AE"><span class="nav-number">2.3.3.</span> <span class="nav-text">私有数据</span></a></li></ol></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="champly"
+      src="/images/themes/logo.jpeg">
+  <p class="site-author-name" itemprop="name">champly</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">7</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/champly" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;champly" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:champly@outlook.com" title="E-Mail → mailto:champly@outlook.com" rel="noopener me" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+<script type="text/javascript" charset="utf-8" src="/js/tagcloud.js"></script>
+<script type="text/javascript" charset="utf-8" src="/js/tagcanvas.js"></script>
+<div class="widget-wrap">
+    <div id="myCanvasContainer" class="widget tagcloud">
+        <canvas width="250" height="250" id="resCanvas" style="width:100%">
+            <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CNI/" rel="tag">CNI</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Distributed/" rel="tag">Distributed</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hexo/" rel="tag">Hexo</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/IPVS/" rel="tag">IPVS</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Kubernetes/" rel="tag">Kubernetes</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux/" rel="tag">Linux</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Next/" rel="tag">Next</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Raft/" rel="tag">Raft</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/eBPF/" rel="tag">eBPF</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/iptables/" rel="tag">iptables</a><span class="tag-list-count">1</span></li></ul>
+        </canvas>
+    </div>
+</div>
+
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2022/07/30/os/linux_process_and_thread/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/themes/logo.jpeg">
+      <meta itemprop="name" content="champly">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="champly">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Linux 进程管理(一)：进程和线程 | champly">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux 进程管理(一)：进程和线程
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-07-30 08:06:22" itemprop="dateCreated datePublished" datetime="2022-07-30T08:06:22+08:00">2022-07-30</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-05-11 13:53:11" itemprop="dateModified" datetime="2023-05-11T13:53:11+08:00">2023-05-11</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/OS/" itemprop="url" rel="index"><span itemprop="name">OS</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">Views: </span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="Word count in article">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">Word count in article: </span>
+      <span>13k</span>
+    </span>
+    <span class="post-meta-item" title="Reading time">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">Reading time &asymp;</span>
+      <span>12 mins.</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>Linux 进程和线程</p>
+<h2 id="进程"><a href="#进程" class="headerlink" title="进程"></a>进程</h2><p>进程的定义如下:</p>
+<blockquote>
+<p>进程（Process）是指计算机已执行的程序，用户下达执行进程的命令后，就会产生进程。同一个程序可以产生多个进程（一对多），以允许同时有多个用户执行同一个程序，却不会相互冲突。进程需要一些资源才能完成工作，比如 CPU、内存、存储、文件以及 I&#x2F;O 设备等。</p>
+</blockquote>
+<p>这里说的程序，一般都是 ELF 格式的可执行文件。</p>
+<h3 id="ELF"><a href="#ELF" class="headerlink" title="ELF"></a>ELF</h3><p>ELF(Executable and Linking Format) 一般有这几种格式:</p>
+<ul>
+<li>可重定位文件</li>
+<li>可执行文件</li>
+<li>共享对象文件</li>
+<li>内核转储文件</li>
+</ul>
+<h4 id="可重定位文件"><a href="#可重定位文件" class="headerlink" title="可重定位文件"></a>可重定位文件</h4><p>可重定位文件（Relocatable File）包含适用于与其他目标文件链接来创建可执行文件或者共享目标文件的代码和数据，一般都是 *.o 文件，这个编译好的二进制文件里面，应该是代码，还有一些全局变量、静态变量等等。</p>
+<blockquote>
+<p>为什么这里只有全局变量呢？是因为局部变量放到栈里面的，是程序运行过程中随时分配的空间，随时释放的，这里还是二进制文件，还没有启动，所以只有全局变量</p>
+</blockquote>
+<p>这个编译好的代码和变量，将来加载到内存里面的时候，都是要加载到一定位置的。比如调用一个函数，其实就是跳到这个函数所在的代码位置执行；如果修改全局变量，也要到变量的位置那里修改。但是在这个时候，还是 *.o 文件，不是一个可直接运行的程序。所以 *.o 里面的位置是不确定的，但是必须是可重新定位的，因为它将来是要做函数库的，加载到哪里就重新定位这些代码、变量的位置。</p>
+<h4 id="可执行文件"><a href="#可执行文件" class="headerlink" title="可执行文件"></a>可执行文件</h4><p>可执行文件（Executable File）包含适合执行的一个程序，此文件规定了 exec() 如何创建一个程序的进程映像，即 *.out 文件。格式基本上和 *.o 文件大致相似，只不过有多个 *.o 合并过的。这个文件是可以直接加载到内存里面执行的文件了，在 ELF 头里面，有一项 e_entry，也是个虚拟地址，是这个程序运行的入口。一般断点调试的时候可以第一个断点标记到这里</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">docker run -it --<span class="built_in">rm</span> --name centos centos:7.9.2009</span></span><br><span class="line">[root@fe87ccfdbd0a /]# readelf -h /usr/bin/ls</span><br><span class="line">ELF Header:</span><br><span class="line">  Magic:   7f 45 4c 46 02 01 01 00 00 00 00 00 00 00 00 00</span><br><span class="line">  Class:                             ELF64</span><br><span class="line">  Data:                              2&#x27;s complement, little endian</span><br><span class="line">  Version:                           1 (current)</span><br><span class="line">  OS/ABI:                            UNIX - System V</span><br><span class="line">  ABI Version:                       0</span><br><span class="line">  Type:                              EXEC (Executable file)</span><br><span class="line">  Machine:                           AArch64</span><br><span class="line">  Version:                           0x1</span><br><span class="line">  Entry point address:               0x404aa8</span><br><span class="line">  Start of program headers:          64 (bytes into file)</span><br><span class="line">  Start of section headers:          136320 (bytes into file)</span><br><span class="line">  Flags:                             0x0</span><br><span class="line">  Size of this header:               64 (bytes)</span><br><span class="line">  Size of program headers:           56 (bytes)</span><br><span class="line">  Number of program headers:         9</span><br><span class="line">  Size of section headers:           64 (bytes)</span><br><span class="line">  Number of section headers:         30</span><br><span class="line">  Section header string table index: 29</span><br></pre></td></tr></table></figure>
+
+<p>通过 readelf 可以查看到这个 Entry point address</p>
+<h4 id="共享对象文件"><a href="#共享对象文件" class="headerlink" title="共享对象文件"></a>共享对象文件</h4><p>共享对象文件（Shared Object File）包含可在两种上下文中链接的代码和数据，首先链接编译器可以将它和其它重定位文件和动态链接库一起处理，生成另外一个目标文件。其次，动态链接器（Dynamic Linker）可能将它与某个可执行文件以及其它共享对象文件一起组合，创建进程映像。即 *.so 文件。</p>
+<h4 id="内核转储"><a href="#内核转储" class="headerlink" title="内核转储"></a>内核转储</h4><p>内核转储（core dumps）存放当前进程的执行上下文，用于 dump 信号触发。</p>
+<p>知道了 ELF 这个格式，这个时候它还是一个程序，需要加载到内存里面。</p>
+<h3 id="启动进程"><a href="#启动进程" class="headerlink" title="启动进程"></a>启动进程</h3><p>在内核中，有这样一个数据结构，用来定义加载二进制文件的方法:</p>
+<figure class="highlight c"><figcaption><span>include/linux/binfmts.h</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * This structure defines the functions that are used to load the binary formats that</span></span><br><span class="line"><span class="comment"> * linux accepts.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">linux_binfmt</span> &#123;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">list_head</span> <span class="title">lh</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">module</span> *<span class="title">module</span>;</span></span><br><span class="line">	<span class="type">int</span> (*load_binary)(<span class="keyword">struct</span> linux_binprm *);</span><br><span class="line">	<span class="type">int</span> (*load_shlib)(<span class="keyword">struct</span> file *);</span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_COREDUMP</span></span><br><span class="line">	<span class="type">int</span> (*core_dump)(<span class="keyword">struct</span> coredump_params *cprm);</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> min_coredump;	<span class="comment">/* minimal dump size */</span></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">&#125; __randomize_layout;</span><br></pre></td></tr></table></figure>
+
+<p>对于 ELF 文件格式，有对应的实现</p>
+<figure class="highlight c"><figcaption><span>fs/binfmt_elf.c</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">linux_binfmt</span> <span class="title">elf_format</span> =</span> &#123;</span><br><span class="line">	.module		= THIS_MODULE,</span><br><span class="line">	.load_binary	= load_elf_binary,</span><br><span class="line">	.load_shlib	= load_elf_library,</span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_COREDUMP</span></span><br><span class="line">	.core_dump	= elf_core_dump,</span><br><span class="line">	.min_coredump	= ELF_EXEC_PAGESIZE,</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>可以看到最终是通过 load_elf_binary 加载的，这里就不继续深入了。</p>
+<h3 id="创建进程"><a href="#创建进程" class="headerlink" title="创建进程"></a>创建进程</h3><p>使用代码来创建进程</p>
+<figure class="highlight c"><figcaption><span>process.c</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/wait.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span> *argv[])</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;hello world (pid:%d)\n&quot;</span>, (<span class="type">int</span>)getpid());</span><br><span class="line"></span><br><span class="line">	<span class="type">int</span> rc = fork();</span><br><span class="line">	<span class="keyword">if</span> (rc &lt; <span class="number">0</span>) &#123;</span><br><span class="line">		<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">&quot;fork failed\n&quot;</span>);</span><br><span class="line">		<span class="built_in">exit</span>(<span class="number">1</span>);</span><br><span class="line">	&#125; <span class="keyword">else</span> <span class="keyword">if</span> (rc == <span class="number">0</span>)&#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;hello, I am child (pid:%d)\n&quot;</span>,(<span class="type">int</span>)getpid());</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		<span class="type">int</span> wc = wait(<span class="literal">NULL</span>);</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;hello, I am parent of %d (wc:%d) (pid:%d)\n&quot;</span>, rc, wc, (<span class="type">int</span>)getpid());</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>运行程序</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[root@ec2c598cce50 /]# gcc process.c -o process</span><br><span class="line">[root@ec2c598cce50 /]# ./process</span><br><span class="line">hello world (pid:115)</span><br><span class="line">hello, I am child (pid:116)</span><br><span class="line">hello, I am parent of 116 (wc:116) (pid:115)</span><br></pre></td></tr></table></figure>
+
+<p>可以看到上面的父进程通过 fork 这个系统调用创建了子进程。如果在上面添加一个休眠，就可以通过 ps 查看到两个进程</p>
+<figure class="highlight diff"><figcaption><span>process.c</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;stdio.h&gt;</span><br><span class="line">#include &lt;stdlib.h&gt;</span><br><span class="line">#include &lt;unistd.h&gt;</span><br><span class="line">#include &lt;sys/wait.h&gt;</span><br><span class="line"></span><br><span class="line">int main(int argc, char *argv[])</span><br><span class="line">&#123;</span><br><span class="line">	printf(&quot;hello world (pid:%d)\n&quot;, (int)getpid());</span><br><span class="line"></span><br><span class="line">	int rc = fork();</span><br><span class="line">	if (rc &lt; 0) &#123;</span><br><span class="line">		fprintf(stderr, &quot;fork failed\n&quot;);</span><br><span class="line">		exit(1);</span><br><span class="line">	&#125; else if (rc == 0)&#123;</span><br><span class="line">		printf(&quot;hello, I am child (pid:%d)\n&quot;,(int)getpid());</span><br><span class="line"><span class="addition">+		sleep(10);</span></span><br><span class="line">	&#125; else &#123;</span><br><span class="line">		int wc = wait(NULL);</span><br><span class="line">		printf(&quot;hello, I am parent of %d (wc:%d) (pid:%d)\n&quot;, rc, wc, (int)getpid());</span><br><span class="line">	&#125;</span><br><span class="line">	return 0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>继续运行发现不会退出，因为 <code>wait(NULL)</code>，父进程需要等待子进程退出，所以通过 ps 查看进程</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">[root@ec2c598cce50 /]# ps -ef</span><br><span class="line">UID          PID    PPID  C STIME TTY          TIME CMD</span><br><span class="line">root           1       0  0 5月28 ?        00:00:16 /usr/lib/systemd/systemd --switched-root --system --deserialize 21</span><br><span class="line">root           2       0  0 5月28 ?        00:00:00 [kthreadd]</span><br><span class="line">root           3       2  0 5月28 ?        00:00:00 [rcu_gp]</span><br><span class="line">root           4       2  0 5月28 ?        00:00:00 [rcu_par_gp]</span><br><span class="line">......</span><br><span class="line">root         148       1  0 09:10 pts/0    00:00:00 ./process</span><br><span class="line">root         149     148  0 09:10 pts/0    00:00:00 ./process</span><br><span class="line">root         150     117  0 09:10 pts/1    00:00:00 ps -ef</span><br></pre></td></tr></table></figure>
+
+<p>可以看到 148、149 都是 process 这个进程，只不过，148 的 PPID 是 1，而 149 的 PPID 是 148（父进程）。还可以看到 1 号进程的父进程是 0 号进程，而 2 号进程的父进程也是 0 号进程。那么这里的 0,1,2 号进程是什么呢？在系统中有什么作用？</p>
+<h3 id="特殊进程"><a href="#特殊进程" class="headerlink" title="特殊进程"></a>特殊进程</h3><p>0, 1, 2 号进程是 Linux 系统初始化的时候创建的三个进程，初始化的函数在 start_kernel 这里</p>
+<figure class="highlight c"><figcaption><span>init/main.c</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">asmlinkage __visible <span class="type">void</span> __init __no_sanitize_address <span class="title function_">start_kernel</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">char</span> *command_line;</span><br><span class="line">	<span class="type">char</span> *after_dashes;</span><br><span class="line"></span><br><span class="line">	set_task_stack_end_magic(&amp;init_task);</span><br><span class="line">	smp_setup_processor_id();</span><br><span class="line">	debug_objects_early_init();</span><br><span class="line">	init_vmlinux_build_id();</span><br><span class="line"></span><br><span class="line">	cgroup_init_early();</span><br><span class="line"></span><br><span class="line"><span class="comment">// ...... 省略其它逻辑</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Do the rest non-__init&#x27;ed, we&#x27;re now alive */</span></span><br><span class="line">	arch_call_rest_init();</span><br><span class="line"></span><br><span class="line">	prevent_tail_call_optimization();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="0-号进程"><a href="#0-号进程" class="headerlink" title="0 号进程"></a>0 号进程</h4><p>通过 <code>init/main.c</code> 的 <code>start_kernel</code> 代码，可以看到有一行 <code>set_task_stack_end_magic(&amp;init_task)</code>，其中 <code>init_task</code> 定义如下：</p>
+<figure class="highlight c"><figcaption><span>init/init_task.c</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Set up the first task table, touch at your own risk!. Base=0,</span></span><br><span class="line"><span class="comment"> * limit=0x1fffff (=2MB)</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span> <span class="title">init_task</span></span></span><br></pre></td></tr></table></figure>
+
+<p>它是系统创建的第一个进程，称为 0 号进程，这是唯一一个没有通过 <code>fork</code> 或者 <code>kernel_thread</code> 产生的进程，是进程列表的第一个。</p>
+<h4 id="1-号进程"><a href="#1-号进程" class="headerlink" title="1 号进程"></a>1 号进程</h4><p>通过 <code>init/main.c</code> 的 <code>start_kernel</code> 代码，可以看到有一行 <code>arch_call_rest_init()</code></p>
+<figure class="highlight c"><figcaption><span>init/main.c</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> __init __weak <span class="title function_">arch_call_rest_init</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">	rest_init();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">noinline <span class="type">void</span> __ref <span class="title function_">rest_init</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span> *<span class="title">tsk</span>;</span></span><br><span class="line">	<span class="type">int</span> pid;</span><br><span class="line"></span><br><span class="line">	rcu_scheduler_starting();</span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * We need to spawn init first so that it obtains pid 1, however</span></span><br><span class="line"><span class="comment">	 * the init task will end up wanting to create kthreads, which, if</span></span><br><span class="line"><span class="comment">	 * we schedule it before we create kthreadd, will OOPS.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	pid = user_mode_thread(kernel_init, <span class="literal">NULL</span>, CLONE_FS);</span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * Pin init on the boot CPU. Task migration is not properly working</span></span><br><span class="line"><span class="comment">	 * until sched_init_smp() has been run. It will set the allowed</span></span><br><span class="line"><span class="comment">	 * CPUs for init to the non isolated CPUs.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line"> 	rcu_read_lock();</span><br><span class="line">	tsk = find_task_by_pid_ns(pid, &amp;init_pid_ns);</span><br><span class="line">	tsk-&gt;flags |= PF_NO_SETAFFINITY;</span><br><span class="line">	set_cpus_allowed_ptr(tsk, cpumask_of(smp_processor_id()));</span><br><span class="line">	rcu_read_unlock();</span><br><span class="line"></span><br><span class="line">	numa_default_policy();</span><br><span class="line">	pid = kernel_thread(kthreadd, <span class="literal">NULL</span>, CLONE_FS | CLONE_FILES);</span><br><span class="line">	<span class="comment">// ......</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以看到 <code>arch_call_rest_init</code> 最终调用了 <code>rest_init</code>，<code>rest_init</code> 第一大工作就是使用 <code>user_mode_thread(kernel_init, NULL, CLONE_FS)</code> 创建第二个进程，这个就是 1 号进程。对于 Linux 操作系统来说，有“划时代”的意义。因为它将运行一个用户进程，这意味着后续的用户进程可以通过这个进程创建，从而形成一颗进程树。可以看到传入的第一个参数 <code>kernel_init</code> 是一个函数</p>
+<figure class="highlight c"><figcaption><span>init/main.c</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">char</span> *ramdisk_execute_command = <span class="string">&quot;/init&quot;</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">int</span> __ref <span class="title function_">kernel_init</span><span class="params">(<span class="type">void</span> *unused)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="comment">// ......</span></span><br><span class="line">	<span class="keyword">if</span> (ramdisk_execute_command) &#123;</span><br><span class="line">		ret = run_init_process(ramdisk_execute_command);</span><br><span class="line">		<span class="keyword">if</span> (!ret)</span><br><span class="line">			<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">		pr_err(<span class="string">&quot;Failed to execute %s (error %d)\n&quot;</span>,</span><br><span class="line">		       ramdisk_execute_command, ret);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * We try each of these until one succeeds.</span></span><br><span class="line"><span class="comment">	 *</span></span><br><span class="line"><span class="comment">	 * The Bourne shell can be used instead of init if we are</span></span><br><span class="line"><span class="comment">	 * trying to recover a really broken machine.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">if</span> (execute_command) &#123;</span><br><span class="line">		ret = run_init_process(execute_command);</span><br><span class="line">		<span class="keyword">if</span> (!ret)</span><br><span class="line">			<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">		panic(<span class="string">&quot;Requested init %s failed (error %d).&quot;</span>,</span><br><span class="line">		      execute_command, ret);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (CONFIG_DEFAULT_INIT[<span class="number">0</span>] != <span class="string">&#x27;\0&#x27;</span>) &#123;</span><br><span class="line">		ret = run_init_process(CONFIG_DEFAULT_INIT);</span><br><span class="line">		<span class="keyword">if</span> (ret)</span><br><span class="line">			pr_err(<span class="string">&quot;Default init %s failed (error %d)\n&quot;</span>,</span><br><span class="line">			       CONFIG_DEFAULT_INIT, ret);</span><br><span class="line">		<span class="keyword">else</span></span><br><span class="line">			<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (!try_to_run_init_process(<span class="string">&quot;/sbin/init&quot;</span>) ||</span><br><span class="line">	    !try_to_run_init_process(<span class="string">&quot;/etc/init&quot;</span>) ||</span><br><span class="line">	    !try_to_run_init_process(<span class="string">&quot;/bin/init&quot;</span>) ||</span><br><span class="line">	    !try_to_run_init_process(<span class="string">&quot;/bin/sh&quot;</span>))</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">	panic(<span class="string">&quot;No working init found.  Try passing init= option to kernel. &quot;</span></span><br><span class="line">	      <span class="string">&quot;See Linux Documentation/admin-guide/init.rst for guidance.&quot;</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">run_init_process</span><span class="params">(<span class="type">const</span> <span class="type">char</span> *init_filename)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">const</span> <span class="type">char</span> *<span class="type">const</span> *p;</span><br><span class="line"></span><br><span class="line">	argv_init[<span class="number">0</span>] = init_filename;</span><br><span class="line">	pr_info(<span class="string">&quot;Run %s as init process\n&quot;</span>, init_filename);</span><br><span class="line">	pr_debug(<span class="string">&quot;  with arguments:\n&quot;</span>);</span><br><span class="line">	<span class="keyword">for</span> (p = argv_init; *p; p++)</span><br><span class="line">		pr_debug(<span class="string">&quot;    %s\n&quot;</span>, *p);</span><br><span class="line">	pr_debug(<span class="string">&quot;  with environment:\n&quot;</span>);</span><br><span class="line">	<span class="keyword">for</span> (p = envp_init; *p; p++)</span><br><span class="line">		pr_debug(<span class="string">&quot;    %s\n&quot;</span>, *p);</span><br><span class="line">	<span class="keyword">return</span> kernel_execve(init_filename, argv_init, envp_init);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">try_to_run_init_process</span><span class="params">(<span class="type">const</span> <span class="type">char</span> *init_filename)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">int</span> ret;</span><br><span class="line"></span><br><span class="line">	ret = run_init_process(init_filename);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (ret &amp;&amp; ret != -ENOENT) &#123;</span><br><span class="line">		pr_err(<span class="string">&quot;Starting init: %s exists but couldn&#x27;t execute it (error %d)\n&quot;</span>,</span><br><span class="line">		       init_filename, ret);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以看到调用过程，先尝试运行 <code>ramdisk</code> 的 <code>/init</code>，或者普通文件系统上的 <code>/sbin/init</code>, <code>/etc/init</code>, <code>/bin/init</code>, <code>/bin/sh</code>（不同版本的 Linux 会选择不同的文件启动），只要有一个启动起来就行了。</p>
+<p>最终调用的流程:</p>
+<pre><code class="highlight mermaid">flowchart LR
+
+kernel_execve --&gt; bprm_execve
+bprm_execve --&gt; exec_binprm
+exec_binprm --&gt; search_binary_handler
+search_binary_handler --&gt; load_binary</code></pre>
+
+<p>可以看到 <code>load_binary</code> 的 ELF 实现就是 <code>load_elf_library</code>，最终调用 <code>start_thread</code></p>
+<figure class="highlight c"><figcaption><span>arch/x86/kernel/process_32.c</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span></span><br><span class="line"><span class="title function_">start_thread</span><span class="params">(<span class="keyword">struct</span> pt_regs *regs, <span class="type">unsigned</span> <span class="type">long</span> new_ip, <span class="type">unsigned</span> <span class="type">long</span> new_sp)</span></span><br><span class="line">&#123;</span><br><span class="line">	loadsegment(gs, <span class="number">0</span>);</span><br><span class="line">	regs-&gt;fs		= <span class="number">0</span>;</span><br><span class="line">	regs-&gt;ds		= __USER_DS;</span><br><span class="line">	regs-&gt;es		= __USER_DS;</span><br><span class="line">	regs-&gt;ss		= __USER_DS;</span><br><span class="line">	regs-&gt;cs		= __USER_CS;</span><br><span class="line">	regs-&gt;ip		= new_ip;</span><br><span class="line">	regs-&gt;sp		= new_sp;</span><br><span class="line">	regs-&gt;flags		= X86_EFLAGS_IF;</span><br><span class="line">&#125;</span><br><span class="line">EXPORT_SYMBOL_GPL(start_thread);</span><br></pre></td></tr></table></figure>
+
+<p>这里的 <code>pt_regs</code> 就是寄存器，这个结构就是在系统调用的时候，内核中保存用户态上下文的，里面将用户态的代码段 CS 设置为 __USER_CS，将用户态的数据段 DS 设置为 __USER_DS，以及指令指针寄存器 IP、栈指针寄存器 SP，这里相当于补上了系统调用里，保存寄存器的步骤。所以这里执行完成之后，就回到用户态了。所以是相当于从内核态执行了 <code>exec</code> 生成了 1 号进程，执行完成后，1 号进程从内核态返回用户态并最终运行在用户态，成为了用户态进程的祖先。</p>
+<h4 id="2-号进程"><a href="#2-号进程" class="headerlink" title="2 号进程"></a>2 号进程</h4><p>通过 <code>init/main.c</code> 的 <code>rest_init</code> 第二个工作就是通过 <code>kernel_thread(kthreadd, NULL, CLONE_FS | CLONE_FILES)</code> 创建 2 号进程，这里的 <code>thread</code> 可以翻译成线程，这也是 Linux 操作系统很重要的一个概念。2 号进程管理所有的内核态的进程，<code>kthreadd</code> 负责所有内核态的线程的调度和管理，是内核态所有线程运行的祖先。</p>
+<h2 id="线程"><a href="#线程" class="headerlink" title="线程"></a>线程</h2><p>从用户态来看，进程就是把一个可执行程序启动起来，这个进程包含很多资源，一般一个进程需要有多个模块执行不同或相同的任务，这就叫多线程（Multithreading）。如果只有一个线程，那它就是进程的主线程（一般项目的 main 函数所在的线程）。但是从内核态来看，无论是进程还是线程，都可以统称为任务（Task），都使用相同的数据结构，放在同一个链表中。</p>
+<h3 id="为什么要有线程"><a href="#为什么要有线程" class="headerlink" title="为什么要有线程"></a>为什么要有线程</h3><p>其实对于人一个进程来讲，即便没有主动创建线程，进程也是默认有一个主线程的。线程是负责执行二进制指令的，进程要比线程管的多，除了要执行指令外，内存、文件系统等都需要进程来管理。<strong>进程相当于一个项目，而线程就是为了完成项目需求，而建立的一个个开发任务</strong></p>
+<h3 id="创建线程"><a href="#创建线程" class="headerlink" title="创建线程"></a>创建线程</h3><figure class="highlight c"><figcaption><span>thread.c</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;assert.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;pthread.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="keyword">volatile</span> <span class="type">int</span> counter = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">pthread_mutex_t</span> lock;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> *<span class="title function_">mythread</span><span class="params">(<span class="type">void</span> *arg)</span> &#123;</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;%s: begin\n&quot;</span>, (<span class="type">char</span> *)arg);</span><br><span class="line"></span><br><span class="line">	<span class="type">int</span> i;</span><br><span class="line">	pthread_mutex_lock(&amp;lock);</span><br><span class="line">	<span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; <span class="number">1e7</span>; i++) &#123;</span><br><span class="line">		counter++;</span><br><span class="line">	&#125;</span><br><span class="line">	pthread_mutex_unlock(&amp;lock);</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;%s: done\n&quot;</span>, (<span class="type">char</span> *)arg);</span><br><span class="line"></span><br><span class="line">	pthread_exit((<span class="type">void</span> *)mythread);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span> *argv[])</span> &#123;</span><br><span class="line">	<span class="type">pthread_t</span> p1, p2;</span><br><span class="line">	<span class="type">int</span> rc;</span><br><span class="line"></span><br><span class="line">	rc = pthread_mutex_init(&amp;lock, <span class="literal">NULL</span>); assert(rc == <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">	<span class="type">pthread_attr_t</span> thread_attr;                                        </span><br><span class="line">	pthread_attr_init(&amp;thread_attr);                                   </span><br><span class="line">	pthread_attr_setdetachstate(&amp;thread_attr, PTHREAD_CREATE_JOINABLE);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;main: begin (counter = %d)\n&quot;</span>, counter);</span><br><span class="line">	rc = pthread_create(&amp;p1, &amp;thread_attr, mythread, <span class="string">&quot;A&quot;</span>); assert(rc == <span class="number">0</span>);</span><br><span class="line">	rc = pthread_create(&amp;p2, &amp;thread_attr, mythread, <span class="string">&quot;B&quot;</span>); assert(rc == <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">	pthread_attr_destroy(&amp;thread_attr);</span><br><span class="line"></span><br><span class="line">	<span class="comment">// join waits for the threads to finish</span></span><br><span class="line">	rc = pthread_join(p1, <span class="literal">NULL</span>); assert(rc == <span class="number">0</span>);</span><br><span class="line">	rc = pthread_join(p2, <span class="literal">NULL</span>); assert(rc == <span class="number">0</span>);</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;main: done with both (counter = %d)\n&quot;</span>, counter);</span><br><span class="line"></span><br><span class="line">	pthread_mutex_destroy(&amp;lock);</span><br><span class="line"></span><br><span class="line">	pthread_exit(<span class="literal">NULL</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>由于 pthread 库不是标准 Linux 库，所以需要使用 <code>gcc thread.c -l pthread</code> 来编译</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[root@ec2c598cce50 tmp]# gcc thread.c -l pthread</span><br><span class="line">[root@ec2c598cce50 tmp]# ./a.out</span><br><span class="line">main: begin (counter = 0)</span><br><span class="line">B: begin</span><br><span class="line">A: begin</span><br><span class="line">B: done</span><br><span class="line">A: done</span><br><span class="line">main: done with both (counter = 20000000)</span><br></pre></td></tr></table></figure>
+
+<p>一个普通线程的创建和运行过程:</p>
+<ul>
+<li>声明线程函数<blockquote>
+<p>void *mythread(void *arg) {<br>……<br>pthread_exit((void *)output);<br>}</p>
+</blockquote>
+</li>
+<li>声明线程对象<blockquote>
+<p>pthread_t p1, p2;</p>
+</blockquote>
+</li>
+<li>设置线程属性<blockquote>
+<p>pthread_attr_t thread_attr;<br>pthread_attr_init(&amp;thread_attr);<br>pthread_attr_setdetachstate(&amp;thread_attr, PTHREAD_CREATE_JOINABLE);</p>
+</blockquote>
+</li>
+<li>创建线程<blockquote>
+<p>rc &#x3D; pthread_create(&amp;p1, &amp;thread_attr, mythread, “A”); assert(rc &#x3D;&#x3D; 0);</p>
+</blockquote>
+<ul>
+<li>子线程开始<blockquote>
+<p>void *mythread(void *arg)</p>
+</blockquote>
+</li>
+<li>子线程结束<blockquote>
+<p>pthread_exit</p>
+</blockquote>
+</li>
+</ul>
+</li>
+<li>销毁线程属性<blockquote>
+<p>pthread_attr_destroy(&amp;thread_attr);</p>
+</blockquote>
+</li>
+<li>等待线程结束<blockquote>
+<p>rc &#x3D; pthread_join(p1, NULL); assert(rc &#x3D;&#x3D; 0);</p>
+</blockquote>
+</li>
+<li>主线程结束<blockquote>
+<p>pthread_exit(NULL);</p>
+</blockquote>
+</li>
+</ul>
+<h3 id="数据"><a href="#数据" class="headerlink" title="数据"></a>数据</h3><p>线程可以将进程并行起来，加快进度，但是也会带来负面影响，过程并行了，数据应该如何“并行”？</p>
+<h4 id="本地数据"><a href="#本地数据" class="headerlink" title="本地数据"></a>本地数据</h4><p>线程上的本地数据，比如函数执行过程中的局部变量。每个线程都有自己的栈空间，栈的大小可以通过命令 <code>ulimit -a</code> 查看</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">[root@ec2c598cce50 tmp]# ulimit -a</span><br><span class="line">core file size          (blocks, -c) 0</span><br><span class="line">data seg size           (kbytes, -d) unlimited</span><br><span class="line">scheduling priority             (-e) 0</span><br><span class="line">file size               (blocks, -f) unlimited</span><br><span class="line">pending signals                 (-i) 31345</span><br><span class="line">max locked memory       (kbytes, -l) 64</span><br><span class="line">max memory size         (kbytes, -m) unlimited</span><br><span class="line">open files                      (-n) 1048576</span><br><span class="line">pipe size            (512 bytes, -p) 8</span><br><span class="line">POSIX message queues     (bytes, -q) 819200</span><br><span class="line">real-time priority              (-r) 0</span><br><span class="line">stack size              (kbytes, -s) 8192</span><br><span class="line">cpu time               (seconds, -t) unlimited</span><br><span class="line">max user processes              (-u) unlimited</span><br><span class="line">virtual memory          (kbytes, -v) unlimited</span><br><span class="line">file locks                      (-x) unlimited</span><br></pre></td></tr></table></figure>
+
+<p>默认 <code>stack size</code> 大小为 8192（8MB），可以通过 <code>ulimit -s</code> 修改。对于线程栈，可以通过 <code>pthread_attr_t</code> 修改线程栈的大小</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">pthread_attr_setstacksize</span><span class="params">(<span class="type">pthread_attr_t</span> *attr, <span class="type">size_t</span> stacksize)</span>;</span><br></pre></td></tr></table></figure>
+
+<p>主线程在内存中有一个栈空间，其它线程也拥有独立的栈空间。为了避免线程之间的栈空间踩踏，线程栈之间还会有一小块区域，用来隔离保护各自的栈空间。一旦另一个线程踏入到这个隔离区，就会引发段错误(SegmentFault)。</p>
+<p>线程函数调用的压栈过程：</p>
+<p><img data-src="/images/os/linux_process_and_thread/stack.jpeg" alt="函数调用压栈"></p>
+<h4 id="全局数据"><a href="#全局数据" class="headerlink" title="全局数据"></a>全局数据</h4><p>在整个进程里共享的全局数据，例如全局变量，虽然在不同进程中是隔离的，但是在一个进程中是共享的。如果同一个全局变量，两个线程一起修改，那肯定会有问题。这就需要有一种机制来保护顺序，让运行结果可预期。可以通过加锁或者信号量等一些办法来控制。</p>
+<h4 id="私有数据"><a href="#私有数据" class="headerlink" title="私有数据"></a>私有数据</h4><p>可以通过 <code>pthread_key_create</code> 创建</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">pthread_key_create</span><span class="params">(<span class="type">pthread_key_t</span> *key, <span class="type">void</span> (*destructor)(<span class="type">void</span>*))</span></span><br></pre></td></tr></table></figure>
+
+<p>创建一个 key，的同时，会传入一个析构函数（释放资源的时候执行的函数）。key 一旦被创建，所欲呕线程都可以访问它，但各个线程可以根据自己的需要往 key 中填入不同的值，这就相当于提供了一个同名而不同值的全局变量。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 设置 key 对应的 value</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">pthread_setspecific</span><span class="params">(<span class="type">pthread_key_t</span> key, <span class="type">const</span> <span class="type">void</span> *value)</span></span><br><span class="line"><span class="comment">// 获取 key 对应的 value</span></span><br><span class="line"><span class="type">void</span> *<span class="title function_">pthread_getspecific</span><span class="params">(<span class="type">pthread_key_t</span> key)</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>在 Linux 里面，无论是进程还是线程，到了内核里面，统一都叫任务（Task），由一个统一的结构体 <code>task_struct</code> 进行管理。接下来将继续学习任务的调度。</p>
+</blockquote>
+<hr>
+<p>参考链接:</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/HFQL5d-C24DKjQbYAQfl8g">https://mp.weixin.qq.com/s/HFQL5d-C24DKjQbYAQfl8g</a></li>
+<li><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=Mzk0MjE3NDE0Ng==&mid=2247501576&idx=1&sn=657e1c89d1007a935820d394d64f4035&scene=21#wechat_redirect">https://mp.weixin.qq.com/s?__biz&#x3D;Mzk0MjE3NDE0Ng&#x3D;&#x3D;&amp;mid&#x3D;2247501576&amp;idx&#x3D;1&amp;sn&#x3D;657e1c89d1007a935820d394d64f4035&amp;scene&#x3D;21#wechat_redirect</a></li>
+<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/79772089">https://zhuanlan.zhihu.com/p/79772089</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.jianshu.com/p/0d90b92000c0">https://www.jianshu.com/p/0d90b92000c0</a></li>
+<li><a target="_blank" rel="noopener" href="https://segmentfault.com/a/1190000039367851?utm_source=sf-similar-article">https://segmentfault.com/a/1190000039367851?utm_source&#x3D;sf-similar-article</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.cnblogs.com/chaojiyingxiong/p/15799617.html">https://www.cnblogs.com/chaojiyingxiong/p/15799617.html</a></li>
+<li><a target="_blank" rel="noopener" href="http://www.wowotech.net/process_management/scheduler-history.html">http://www.wowotech.net/process_management&#x2F;scheduler-history.html</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.ibm.com/developerworks/cn/linux/l-cn-scheduler/index.html">https://www.ibm.com/developerworks/cn/linux/l-cn-scheduler/index.html</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.jianshu.com/p/673c9e4817a8">https://www.jianshu.com/p/673c9e4817a8</a></li>
+<li><a target="_blank" rel="noopener" href="https://blog.eastonman.com/blog/2021/02/cfs/">https://blog.eastonman.com/blog/2021/02/cfs/</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.kernel.org/doc/html/latest/scheduler/sched-design-CFS.html">https://www.kernel.org/doc/html/latest/scheduler/sched-design-CFS.html</a></li>
+<li><a target="_blank" rel="noopener" href="https://time.geekbang.org/column/intro/100024701?tab=catalog">https://time.geekbang.org/column/intro/100024701?tab=catalog</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Linux/" rel="tag"><i class="fa fa-tag"></i> Linux</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/02/28/other/build-github-blog-with-hexo/" rel="prev" title="使用 HEXO 构建 github 博客">
+                  <i class="fa fa-chevron-left"></i> 使用 HEXO 构建 github 博客
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/07/31/os/linux_task_scheduling/" rel="next" title="Linux 进程管理(二)：任务调度">
+                  Linux 进程管理(二)：任务调度 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments gitalk-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">champly</span>
+</div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+      <span>Word count total: </span>
+    <span title="Word count total">80k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span>Reading time total &asymp;</span>
+    <span title="Reading time total">1:13</span>
+  </span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+    </div>
+  </footer>
+
+  
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/champly" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.8/medium-zoom.min.js" integrity="sha256-7PhEpEWEW0XXQ0k6kQrPKwuoIomz8R8IYyuU1Qew4P8=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pangu/4.0.7/pangu.min.js" integrity="sha256-j+yj56cdEY2CwkVtGyz18fNybFGpMGJ8JxG3GSyO2+I=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/9.4.3/mermaid.min.js","integrity":"sha256-e0o3JYsdjqKajf9eOe22FhioYSz9WofRY4dLKo3F6do="}}</script>
+  <script src="/js/third-party/tags/mermaid.js"></script>
+
+
+
+
+  
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/quicklink/2.3.0/quicklink.umd.js" integrity="sha256-yvJQOINiH9fWemHn0vCA5lsHWJaHs6/ZmO+1Ft04SvM=" crossorigin="anonymous"></script>
+  <script class="next-config" data-name="quicklink" type="application/json">{"enable":true,"home":true,"archive":true,"delay":true,"timeout":3000,"priority":true,"url":"http://example.com/2022/07/30/os/linux_process_and_thread/"}</script>
+  <script src="/js/third-party/quicklink.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/gitalk/1.8.0/gitalk.css" integrity="sha256-AJnUHL7dBv6PGaeyPQJcgQPDjt/Hn/PvYZde1iqfp8U=" crossorigin="anonymous">
+
+<script class="next-config" data-name="gitalk" type="application/json">{"enable":true,"github_id":"champly","repo":"champly.github.io","client_id":"e73bf3d8d8c7947be9c2","client_secret":"25256fb151149009db7add5031c73f39a85f608c","admin_user":"champly","distraction_free_mode":true,"proxy":"https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token","language":"en","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/gitalk/1.8.0/gitalk.min.js","integrity":"sha256-MVK9MGD/XJaGyIghSVrONSnoXoGh3IFxLw0zfvzpxR4="},"path_md5":"0c50cdeac6a1ec2f50bcb86765cbab55"}</script>
+<script src="/js/third-party/comments/gitalk.js"></script>
+
+
+  <script async src="/js/cursor/fireworks.js"></script>
+
+
+
+
+
+
+
+
+<style>
+	#bgCanvas {
+		background-color: rgba(255,255,255) !important;
+	}
+</style>
+<script type="text/javascript" size="150" alpha="0.6" zindex="-2" src="/js/bg/ribbon.min.js"></script>
+
+
+</body>
+</html>

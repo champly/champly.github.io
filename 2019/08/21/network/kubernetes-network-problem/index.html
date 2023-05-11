@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#02b1e0"><meta name="generator" content="Hexo 6.2.0">
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/logo/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/logo/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/logo/favicon-16x16.png">
+  <link rel="mask-icon" href="/images/logo/favicon.ico" color="#02b1e0">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha256-HtsXJanqjKTc8vVQjO4YMhiqFoXkfBsjBWcX91T1jr8=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.16.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12},"copycode":{"enable":true,"style":"mac"},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"},"path":"/search.json","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":true}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="安全组当一个网络包进入网卡的时候，首先拿下 mac 头看看是不是当前网卡的。  如果是，则拿下 IP 头，得到了 IP 之后，就开始进行路由判断。在路由判断之前这个节点称为 PREROUTING。 如果发现ip是当前网卡 IP，包就应该发给上面的传输层，这个节点叫做 INPUT。 如果发现 IP 不是当前网卡的，就需要进行转发，这个节点就叫 FORWARD。 如果ip是当前网卡的 IP，则发送到上">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Kubernetes 网络问题排查">
+<meta property="og:url" content="http://example.com/2019/08/21/network/kubernetes-network-problem/index.html">
+<meta property="og:site_name" content="champly">
+<meta property="og:description" content="安全组当一个网络包进入网卡的时候，首先拿下 mac 头看看是不是当前网卡的。  如果是，则拿下 IP 头，得到了 IP 之后，就开始进行路由判断。在路由判断之前这个节点称为 PREROUTING。 如果发现ip是当前网卡 IP，包就应该发给上面的传输层，这个节点叫做 INPUT。 如果发现 IP 不是当前网卡的，就需要进行转发，这个节点就叫 FORWARD。 如果ip是当前网卡的 IP，则发送到上">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/images/network/kubernetes-network-problem/iptables.png">
+<meta property="article:published_time" content="2019-08-21T07:23:09.000Z">
+<meta property="article:modified_time" content="2023-05-11T05:53:11.750Z">
+<meta property="article:author" content="champly">
+<meta property="article:tag" content="Kubernetes">
+<meta property="article:tag" content="IPVS">
+<meta property="article:tag" content="iptables">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/network/kubernetes-network-problem/iptables.png">
+
+
+<link rel="canonical" href="http://example.com/2019/08/21/network/kubernetes-network-problem/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"en","comments":true,"permalink":"http://example.com/2019/08/21/network/kubernetes-network-problem/","path":"2019/08/21/network/kubernetes-network-problem/","title":"Kubernetes 网络问题排查"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Kubernetes 网络问题排查 | champly</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<link rel="alternate" href="/atom.xml" title="champly" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">champly</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">To be or not to be is up to you</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags<span class="badge">10</span></a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories<span class="badge">5</span></a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives<span class="badge">7</span></a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup"><div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off" maxlength="80"
+           placeholder="Searching..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close" role="button">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="search-result-container no-result">
+  <div class="search-result-icon">
+    <i class="fa fa-spinner fa-pulse fa-5x"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E5%85%A8%E7%BB%84"><span class="nav-number">1.</span> <span class="nav-text">安全组</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#iptables-%E6%A8%A1%E5%9D%97"><span class="nav-number">2.</span> <span class="nav-text">iptables 模块</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#iptables"><span class="nav-number">3.</span> <span class="nav-text">iptables</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A1%A8"><span class="nav-number">3.1.</span> <span class="nav-text">表</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#filter-%E8%A1%A8"><span class="nav-number">3.1.1.</span> <span class="nav-text">filter 表</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#nat-%E8%A1%A8"><span class="nav-number">3.1.2.</span> <span class="nav-text">nat 表</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#mangle-%E8%A1%A8"><span class="nav-number">3.1.3.</span> <span class="nav-text">mangle 表</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#raw-%E8%A1%A8"><span class="nav-number">3.1.4.</span> <span class="nav-text">raw 表</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Kubernetes-%E9%87%8C%E7%9A%84-Service"><span class="nav-number">4.</span> <span class="nav-text">Kubernetes 里的 Service</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#iptables-%E6%A8%A1%E5%BC%8F"><span class="nav-number">4.1.</span> <span class="nav-text">iptables 模式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#IPVS-%E6%A8%A1%E5%BC%8F"><span class="nav-number">4.2.</span> <span class="nav-text">IPVS 模式</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E5%92%8C%E8%A7%A3%E5%86%B3%E6%80%9D%E8%B7%AF"><span class="nav-number">5.</span> <span class="nav-text">问题和解决思路</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Service-%E6%B2%A1%E5%8A%9E%E6%B3%95%E9%80%9A%E8%BF%87-DNS-%E8%AE%BF%E9%97%AE"><span class="nav-number">5.1.</span> <span class="nav-text">Service 没办法通过 DNS 访问</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Service-%E6%B2%A1%E5%8A%9E%E6%B3%95%E9%80%9A%E8%BF%87-ClusterIP-%E8%AE%BF%E9%97%AE"><span class="nav-number">5.2.</span> <span class="nav-text">Service 没办法通过 ClusterIP 访问</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Pod-%E6%B2%A1%E5%8A%9E%E6%B3%95%E9%80%9A%E8%BF%87-Service-%E8%AE%BF%E9%97%AE%E8%87%AA%E5%B7%B1"><span class="nav-number">5.3.</span> <span class="nav-text">Pod 没办法通过 Service 访问自己</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B0%83%E8%AF%95%E6%8A%80%E5%B7%A7"><span class="nav-number">6.</span> <span class="nav-text">调试技巧</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9C%9F%E5%AE%9E%E6%A1%88%E4%BE%8B%E5%A4%8D%E7%9B%98"><span class="nav-number">7.</span> <span class="nav-text">真实案例复盘</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%8E%B0%E8%B1%A1"><span class="nav-number">7.1.</span> <span class="nav-text">现象</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%86%E6%9E%90"><span class="nav-number">7.2.</span> <span class="nav-text">分析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95"><span class="nav-number">7.3.</span> <span class="nav-text">解决办法</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="champly"
+      src="/images/themes/logo.jpeg">
+  <p class="site-author-name" itemprop="name">champly</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">7</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/champly" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;champly" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:champly@outlook.com" title="E-Mail → mailto:champly@outlook.com" rel="noopener me" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+<script type="text/javascript" charset="utf-8" src="/js/tagcloud.js"></script>
+<script type="text/javascript" charset="utf-8" src="/js/tagcanvas.js"></script>
+<div class="widget-wrap">
+    <div id="myCanvasContainer" class="widget tagcloud">
+        <canvas width="250" height="250" id="resCanvas" style="width:100%">
+            <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CNI/" rel="tag">CNI</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Distributed/" rel="tag">Distributed</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hexo/" rel="tag">Hexo</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/IPVS/" rel="tag">IPVS</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Kubernetes/" rel="tag">Kubernetes</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux/" rel="tag">Linux</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Next/" rel="tag">Next</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Raft/" rel="tag">Raft</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/eBPF/" rel="tag">eBPF</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/iptables/" rel="tag">iptables</a><span class="tag-list-count">1</span></li></ul>
+        </canvas>
+    </div>
+</div>
+
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2019/08/21/network/kubernetes-network-problem/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/themes/logo.jpeg">
+      <meta itemprop="name" content="champly">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="champly">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Kubernetes 网络问题排查 | champly">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Kubernetes 网络问题排查
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2019-08-21 15:23:09" itemprop="dateCreated datePublished" datetime="2019-08-21T15:23:09+08:00">2019-08-21</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-05-11 13:53:11" itemprop="dateModified" datetime="2023-05-11T13:53:11+08:00">2023-05-11</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/CloudNative/" itemprop="url" rel="index"><span itemprop="name">CloudNative</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">Views: </span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="Word count in article">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">Word count in article: </span>
+      <span>6.7k</span>
+    </span>
+    <span class="post-meta-item" title="Reading time">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">Reading time &asymp;</span>
+      <span>6 mins.</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="安全组"><a href="#安全组" class="headerlink" title="安全组"></a>安全组</h2><p>当一个网络包进入网卡的时候，首先拿下 <code>mac</code> 头看看是不是当前网卡的。</p>
+<ol>
+<li>如果是，则拿下 <code>IP</code> 头，得到了 <code>IP</code> 之后，就开始进行路由判断。在路由判断之前这个节点称为 <code>PREROUTING</code>。</li>
+<li>如果发现ip是当前网卡 <code>IP</code>，包就应该发给上面的传输层，这个节点叫做 <code>INPUT</code>。</li>
+<li>如果发现 <code>IP</code> 不是当前网卡的，就需要进行转发，这个节点就叫 <code>FORWARD</code>。</li>
+<li>如果ip是当前网卡的 <code>IP</code>，则发送到上层处理。处理完一般会返回一个结果，把处理结果发出去，这个节点称为 <code>OUTPUT</code>。</li>
+<li>无论是 <code>FORWARD</code> 和 <code>OUTPUT</code>，都是在路由判断之后发生的，最有一个节点是 <code>POSTROUTING</code>。</li>
+</ol>
+<h2 id="iptables-模块"><a href="#iptables-模块" class="headerlink" title="iptables 模块"></a><code>iptables</code> 模块</h2><p>在 <code>Linux</code> 内核中，有一个框架叫 <code>Netfilter</code>。可以在上面的几个节点放一个hook函数，这些函数可以对数据包进行干预。如果接受就是 <code>ACCEPT</code>;如果需要过滤掉就是 <code>DROP</code>;如果需要发送给用户态进程处理，就是 <code>QUEUE</code>。</p>
+<p><code>iptables</code> 就是实现了 <code>Netfilter</code> 框架，在上面五个节点上都放了hook函数，按照功能可以分为:</p>
+<ol>
+<li>conntrack: 连接跟踪</li>
+<li>filter: 数据包过滤</li>
+<li>nat: 网络地址转换</li>
+<li>mangle: 数据包修改</li>
+</ol>
+<h2 id="iptables"><a href="#iptables" class="headerlink" title="iptables"></a>iptables</h2><p>在用户态，有一个客户端程序 <code>iptables</code>,用命令行来干预内核的规则,内核的功能对于 <code>iptables</code> 来说，就是表和链的概念。</p>
+<h3 id="表"><a href="#表" class="headerlink" title="表"></a>表</h3><ul>
+<li>raw</li>
+<li>mangle</li>
+<li>nat</li>
+<li>filter</li>
+</ul>
+<p>优先级: <code>raw</code> &gt; <code>mangle</code> &gt; <code>nat</code> &gt; <code>filter</code></p>
+<p>raw 不常用，主要功能都在剩下的几个表里面</p>
+<h4 id="filter-表"><a href="#filter-表" class="headerlink" title="filter 表"></a><code>filter</code> 表</h4><p>处理过滤功能</p>
+<ul>
+<li><code>INPUT</code> 链: 过滤所有目标地址是本机的数据包</li>
+<li><code>FORWARD</code> 链: 过滤所有路过本机的数据包</li>
+<li><code>OUTPUT</code> 链: 过滤所有由本机产生的数据包</li>
+</ul>
+<h4 id="nat-表"><a href="#nat-表" class="headerlink" title="nat 表"></a><code>nat</code> 表</h4><ul>
+<li><code>PREROUTING</code> 链: 可以在数据包到达防火墙之前改变目标地址(DNT)</li>
+<li><code>OUTPUT</code> 链: 可以改变本地产生的数据包的目标地址</li>
+<li><code>POSTROUTING</code> 链: 在数据包离开防火墙时改变数据包的源地址(SNAT)</li>
+</ul>
+<h4 id="mangle-表"><a href="#mangle-表" class="headerlink" title="mangle 表"></a><code>mangle</code> 表</h4><ul>
+<li><code>PREROUTING</code> 链</li>
+<li><code>INPUT</code> 链</li>
+<li><code>FORWARD</code> 链</li>
+<li><code>OUTPUT</code> 链</li>
+<li><code>POSTROUTING</code> 链</li>
+</ul>
+<h4 id="raw-表"><a href="#raw-表" class="headerlink" title="raw 表"></a><code>raw</code> 表</h4><ul>
+<li><code>PREROUTING</code> 链</li>
+<li><code>OUTPUT</code> 链</li>
+</ul>
+<p>将 <code>iptables</code> 的表和链整合起来就形成了下面的图和过程。</p>
+<p><img data-src="/images/network/kubernetes-network-problem/iptables.png" alt="iptables"></p>
+<h2 id="Kubernetes-里的-Service"><a href="#Kubernetes-里的-Service" class="headerlink" title="Kubernetes 里的 Service"></a><code>Kubernetes</code> 里的 <code>Service</code></h2><p>** <code>Service</code> 是由 <code>kube-proxy</code> 组件加上 <code>iptables</code> 来共同实现的**</p>
+<h3 id="iptables-模式"><a href="#iptables-模式" class="headerlink" title="iptables 模式"></a><code>iptables</code> 模式</h3><p>当我们创建的 <code>service</code> 提交到 <code>Kubernetes</code> 的时候，<code>kube-proxy</code> 就可以通过 <code>Service</code> 的 <code>Informer</code> 感知到 <code>Service</code> 对象添加。从而对这个事件进行响应，它会在宿主机上创建一条 <code>iptables</code> 规则。可以使用 <code>iptables-save</code> 看见这样一条规则:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-A KUBE-SERVICES -d 10.27.248.11/32 -p tcp -m comment --comment &quot;default/hostnames: cluster IP&quot; -m tcp --dport 80 -j KUBE-SVC-NWV5X2332I4OT4T3</span><br></pre></td></tr></table></figure>
+
+<p>凡是目的地址是 <code>10.27.248.11</code>,端口号是80的包,都使用 <code>KUBE-SVC-NWV5X2332I4OT4T3</code> <code>iptables</code> 链处理，而这个 <code>10.27.248.11</code> 这个就是 <code>Service</code> 的 <code>clusterIP</code>，在查看 <code>KUBE-SVC-NWV5X2332I4OT4T3</code> 规则，实际上是一组规则集合:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">-A KUBE-SVC-NWV5X2332I4OT4T3 -m comment --comment &quot;default/hostnames:&quot; -m statistic --mode random --probability 0.33332999982 -j KUBE-SEP-WNBA2IHDGP2BOBGZ</span><br><span class="line">-A KUBE-SVC-NWV5X2332I4OT4T3 -m comment --comment &quot;default/hostnames:&quot; -m statistic --mode random --probability 0.50000000000 -j KUBE-SEP-X3P2623AGDH6CDF3</span><br><span class="line">-A KUBE-SVC-NWV5X2332I4OT4T3 -m comment --comment &quot;default/hostnames:&quot; -j KUBE-SEP-57KPRZ3JQVENLNBR</span><br></pre></td></tr></table></figure>
+
+<p>这实际上是一组随机模式(–mode random)的 <code>iptables</code> 链,而 <code>KUBE-SEP-(hash)</code> 链指向的最终地址就是代理的三个 <code>Pod</code>(就是 <code>Endpoint</code>)。所以这一组规则就是 <code>Service</code> 实现负载均衡的位置。查看上述三条链明细,就能理解 <code>Service</code> 转发的具体原理：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">-A KUBE-SEP-57KPRZ3JQVENLNBR -s 10.28.1.123/32 -m comment --comment &quot;default/hostnames:&quot; -j MARK --set-xmark 0x00004000/0x00004000</span><br><span class="line">-A KUBE-SEP-57KPRZ3JQVENLNBR -p tcp -m comment --comment &quot;default/hostnames:&quot; -m tcp -j DNAT --to-destination 10.28.1.123:8080</span><br><span class="line"></span><br><span class="line">-A KUBE-SEP-WNBA2IHDGP2BOBGZ -s 10.28.1.22/32 -m comment --comment &quot;default/hostnames:&quot; -j MARK --set-xmark 0x00004000/0x00004000</span><br><span class="line">-A KUBE-SEP-WNBA2IHDGP2BOBGZ -p tcp -m comment --comment &quot;default/hostnames:&quot; -m tcp -j DNAT --to-destination 10.28.1.22:8080</span><br><span class="line"></span><br><span class="line">-A KUBE-SEP-X3P2623AGDH6CDF3 -s 10.28.3.11/32 -m comment --comment &quot;default/hostnames:&quot; -j MARK --set-xmark 0x00004000/0x00004000</span><br><span class="line">-A KUBE-SEP-X3P2623AGDH6CDF3 -p tcp -m comment --comment &quot;default/hostnames:&quot; -m tcp -j DNAT --to-destination 10.28.3.11:8080</span><br></pre></td></tr></table></figure>
+
+<p>这三条链其实就是三条 <code>DNAT</code> 规则。<code>iptables</code> 对流入的 <code>IP</code> 包还设置了一个标志(<code>--set-xmark</code>)，在 <code>PREROUTING</code> 检查之前将流入 <code>IP</code> 包的目的地址和端口改成 <code>--to-destination</code> 所指定的新的地址和端口</p>
+<h3 id="IPVS-模式"><a href="#IPVS-模式" class="headerlink" title="IPVS 模式"></a><code>IPVS</code> 模式</h3><p>基于 <code>iptables</code> 的 <code>Service</code> 实现，都是制约 <code>Kubernetes</code> 项目承载更多量级 <code>Pod</code> 的主要障碍，<code>IPVS</code> 并不需要在主机上为每个 <code>Pod</code> 设置 <code>iptables</code> 规则，而是把这些规则放到了内核态，从而极大地降低了维护这些规则的代价。<code>IPVS</code> 模式的工作原理，和 <code>iptables</code> 类似。当创建了 <code>Service</code> 后，<code>kube-proxy</code> 首先会在宿主机上创建一个虚拟网卡 <code>kube-ipvs0</code>。并为他分配 <code>Service VIP</code> 作为 <code>IP</code> 地址:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">ip addr</span></span><br><span class="line">  ...</span><br><span class="line">  73：kube-ipvs0：&lt;BROADCAST,NOARP&gt;  mtu 1500 qdisc noop state DOWN qlen 1000</span><br><span class="line">  link/ether  1a:ce:f5:5f:c1:4d brd ff:ff:ff:ff:ff:ff</span><br><span class="line">  inet 10.27.248.11/32  scope global kube-ipvs0</span><br><span class="line">  valid_lft forever  preferred_lft forever</span><br></pre></td></tr></table></figure>
+
+<p>然后 <code>kube-proxy</code> 就会通过 <code>Linux</code> 的 <code>IPVS</code> 模块，为这个IP地址设置三个 <code>IPVS</code> 虚拟主机，可以通过 <code>ipvsadm</code> 查看:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">ipvsadm -<span class="built_in">ln</span></span></span><br><span class="line"> IP Virtual Server version 1.2.1 (size=4096)</span><br><span class="line">  Prot LocalAddress:Port Scheduler Flags</span><br><span class="line">    -&gt;  RemoteAddress:Port           Forward  Weight ActiveConn InActConn     </span><br><span class="line">  TCP  10.27.248.11:80 rr</span><br><span class="line">    -&gt;  10.28.1.123:8080   Masq    1       0          0         </span><br><span class="line">    -&gt;  10.28.1.22:8080    Masq    1       0          0</span><br><span class="line">    -&gt;  10.28.3.11:8080    Masq    1       0          0</span><br></pre></td></tr></table></figure>
+
+<p>这三个 <code>IPVS</code> 虚拟主机的 <code>IP</code> 地址和端口对应的就是被代理的 <code>Pod</code>，之间使用轮询模式(rr)来作为负载均衡。</p>
+<p><em><code>IPVS</code> 模块只负责负载均衡和代理功能，而一个完整的 <code>Service</code> 流程正常工作需要的包过滤，<code>SNAT</code>，<code>DNAT</code> 等操作，还是要靠 <code>iptables</code> 来实现。只不过这些辅助性的 <code>iptables</code> 规则数量有限，也不会随着 <code>Pod</code> 数量增加而增加</em></p>
+<p>查看 <code>iptables</code> <code>nat</code> 表</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">-A PREROUTING -m comment --comment &quot;kubernetes service portals&quot; -j KUBE-SERVICES</span><br><span class="line">-A OUTPUT -m comment --comment &quot;kubernetes service portals&quot; -j KUBE-SERVICES</span><br><span class="line">-A POSTROUTING -m comment --comment &quot;kubernetes postrouting rules&quot; -j KUBE-POSTROUTING</span><br><span class="line">-A KUBE-FIREWALL -j KUBE-MARK-DROP</span><br><span class="line">-A KUBE-LOAD-BALANCER -j KUBE-MARK-MASQ</span><br><span class="line">-A KUBE-MARK-MASQ -j MARK --set-xmark 0x4000/0x4000</span><br><span class="line">-A KUBE-NODE-PORT -p tcp -m comment --comment &quot;Kubernetes nodeport TCP port for masquerade purpose&quot; -m set --match-set KUBE-NODE-PORT-TCP dst -j KUBE-MARK-MASQ</span><br><span class="line">-A KUBE-POSTROUTING -m comment --comment &quot;kubernetes service traffic requiring SNAT&quot; -m mark --mark 0x4000/0x4000 -j MASQUERADE</span><br><span class="line">-A KUBE-POSTROUTING -m comment --comment &quot;Kubernetes endpoints dst ip:port, source ip for solving hairpin purpose&quot; -m set --match-set KUBE-LOOP-BACK dst,dst,src -j MASQUERADE</span><br><span class="line">-A KUBE-SERVICES ! -s 10.27.248.0/22 -m comment --comment &quot;Kubernetes service cluster ip + port for masquerade purpose&quot; -m set --match-set KUBE-CLUSTER-IP dst,dst -j KUBE-MARK-MASQ</span><br><span class="line">-A KUBE-SERVICES -m addrtype --dst-type LOCAL -j KUBE-NODE-PORT</span><br><span class="line">-A KUBE-SERVICES -m set --match-set KUBE-CLUSTER-IP dst,dst -j ACCEPT</span><br></pre></td></tr></table></figure>
+
+<p>倒数第 <code>3</code> 条规则表示来源 <code>IP</code> 不是 <code>10.27.248.0/22</code>，则进入 <code>KUBE-MARK-MASQ</code>，打上 <code>0x4000</code> 标。倒数第 <code>5</code> 条规则就是在 <code>POSTROUTING</code> 的时候做 <code>SNAT</code>,如果看到有 <code>0x4000</code> 这个标志的，就修改来源 <code>IP</code>(<code>MASQUERADE</code>)。</p>
+<p><em><code>SNAT</code> 需要指定一个或多个 <code>IP</code>，<code>MASQUERADE</code> 不需要指定，直接获取网卡的 <code>IP</code> 作为来源 <code>IP</code></em></p>
+<h2 id="问题和解决思路"><a href="#问题和解决思路" class="headerlink" title="问题和解决思路"></a>问题和解决思路</h2><h3 id="Service-没办法通过-DNS-访问"><a href="#Service-没办法通过-DNS-访问" class="headerlink" title="Service 没办法通过 DNS 访问"></a><code>Service</code> 没办法通过 <code>DNS</code> 访问</h3><p>区分到底是 <code>Service</code> 本身的配置问题还是集群的 <code>DNS</code> 除了问题，检查的有效方式就是 <code>Kubernetes</code> 自己的 <code>master</code> 节点的 <code>Service</code> <code>DNS</code> 是否正常:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">在pod里面执行</span></span><br><span class="line">nslookup kubernetes.default</span><br></pre></td></tr></table></figure>
+
+<p>如果执行有问题，那么就应该检查 <code>kube-dns</code> 的运行状态和日志。否则的话就应该检查 <code>Service</code> 定义是不是有问题。</p>
+<h3 id="Service-没办法通过-ClusterIP-访问"><a href="#Service-没办法通过-ClusterIP-访问" class="headerlink" title="Service 没办法通过 ClusterIP 访问"></a><code>Service</code> 没办法通过 <code>ClusterIP</code> 访问</h3><p>首先查看时候有 <code>Endpoint</code>(<code>kubectl get endpoint xxxx</code>)，如果 <code>Pod</code> 的 <code>readniessProbe</code> 没有通过,也不会出现在 <code>Endpoint</code> 列表里面。如果 <code>Endpoint</code> 正常，就需要确认一下 <code>kube-proxy</code> 是否正确运行。如果 <code>kube-proxy</code> 一切正常,就应该查看宿主机的 <code>iptables</code>。</p>
+<p><code>iptables</code> 模式的话检查:</p>
+<ul>
+<li><code>KUBE-SERVICE</code> 或者 <code>KUBE-NODEPORTS</code> 规则对应的入口链，这个规则应该和 <code>VIP</code> 和 <code>Service</code> 端口一一对应</li>
+<li><code>KUBE-SEP-(hash)</code> 规则对应的 <code>DNAT</code> 链,和 <code>Endpoint</code> 一一对应</li>
+<li><code>KUBE-SVC-(hash)</code> 规则对应负载均衡链，这些规则的数目应该和 <code>Endpoint</code> 数目对应</li>
+<li>如果是 <code>NodePort</code> 模式的话，还有 <code>POSTROUTING</code> 的 <code>SNAT</code> 链</li>
+</ul>
+<h3 id="Pod-没办法通过-Service-访问自己"><a href="#Pod-没办法通过-Service-访问自己" class="headerlink" title="Pod 没办法通过 Service 访问自己"></a><code>Pod</code> 没办法通过 <code>Service</code> 访问自己</h3><p>这往往就是因为 <code>kubelet</code> 的 <code>hairpin-mode</code> 没有正确被设置(Haripin Mode 发夹模式，在默认情况下，网桥设备是不允许一个数据包从一个端口进来，再从这个端口发出去，开启这个模式从而取消这个限制)</p>
+<h2 id="调试技巧"><a href="#调试技巧" class="headerlink" title="调试技巧"></a>调试技巧</h2><p>使用 <code>nsenter</code> 来进入 <code>Pod</code> 容器</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">function e() &#123;</span><br><span class="line">    set -u</span><br><span class="line">    ns=$&#123;2-&quot;default&quot;&#125;</span><br><span class="line">    container_id=`kubectl -n $ns describe pod $1 | grep -Eo &#x27;docker://.*$&#x27; | head -n 1 | awk -F &#x27;//&#x27; &#x27;&#123;print $2&#125;&#x27;`</span><br><span class="line">    if [ &quot;$container_id&quot; != &quot;&quot; ]</span><br><span class="line">    then</span><br><span class="line">        echo &quot;container_id:$container_id&quot;</span><br><span class="line"></span><br><span class="line">        pid=`docker inspect -f &#123;&#123;.State.Pid&#125;&#125; $container_id`</span><br><span class="line">        echo &quot;pid:$pid&quot;</span><br><span class="line"></span><br><span class="line">        echo &quot;enter pod netns successfully for $ns/$1&quot;</span><br><span class="line">        nsenter -n --target $pid</span><br><span class="line">    fi</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在需要调试的 <code>Pod</code> 的宿主机上先执行这个命令，然后使用 <code>e pod-name namespaces</code> 来进入 <code>Pod</code> 进行调试</p>
+<h2 id="真实案例复盘"><a href="#真实案例复盘" class="headerlink" title="真实案例复盘"></a>真实案例复盘</h2><h3 id="现象"><a href="#现象" class="headerlink" title="现象"></a>现象</h3><p>在集群内任意一个节点上访问 <code>Service</code> 的 <code>cluster ip</code>，如果这个 <code>Service</code> 的 <code>Pod</code> 运行在当前节点，则能访问成功，否则访问不成功</p>
+<h3 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h3><p>在运行有 <code>Pod</code> 的宿主机上使用 <code>tcpdump</code> 抓 <code>cni0</code> 的包(<code>cni0</code> 和 <code>eth0</code> 做了桥接)，发现包正常请求，正常返回</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">tcpdump -nn -i cni0 tcp and host 10.28.248.11</span></span><br></pre></td></tr></table></figure>
+
+<p>分析：服务端是正常处理了请求的，应该是在返回的时候包被丢弃了(因为没有返回结果)。通过上面的 <code>IPVS</code> 模式的介绍，查看 <code>iptables</code> 的配置，发现了问题：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">pod ClusterCIDR: 10.28.0.0/16</span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">ServiceCIDR: 10.28.0.0/16</span></span><br></pre></td></tr></table></figure>
+
+<p>而 <code>iptables</code> 处理的是非 <code>10.28.0.0/16</code> 的包才进行 <code>SNAT</code>，所以导致包回不去，被丢弃了。</p>
+<h3 id="解决办法"><a href="#解决办法" class="headerlink" title="解决办法"></a>解决办法</h3><ul>
+<li>修改 <code>ServiceCIDR</code> 为另外一个网段(推荐)</li>
+<li>每个宿主机上手动添加一条规则: <code>iptables -t nat -A POSTROUTING -s 10.28.0.0/16 -j SNAT --to-source 10.28.252.241(node ip)</code></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Kubernetes/" rel="tag"><i class="fa fa-tag"></i> Kubernetes</a>
+              <a href="/tags/IPVS/" rel="tag"><i class="fa fa-tag"></i> IPVS</a>
+              <a href="/tags/iptables/" rel="tag"><i class="fa fa-tag"></i> iptables</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2019/07/29/network/kubernetes-cni-debug/" rel="prev" title="Kubernetes cni 网络插件调试">
+                  <i class="fa fa-chevron-left"></i> Kubernetes cni 网络插件调试
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/02/28/other/build-github-blog-with-hexo/" rel="next" title="使用 HEXO 构建 github 博客">
+                  使用 HEXO 构建 github 博客 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments gitalk-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">champly</span>
+</div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+      <span>Word count total: </span>
+    <span title="Word count total">80k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span>Reading time total &asymp;</span>
+    <span title="Reading time total">1:13</span>
+  </span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+    </div>
+  </footer>
+
+  
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/champly" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/medium-zoom/1.0.8/medium-zoom.min.js" integrity="sha256-7PhEpEWEW0XXQ0k6kQrPKwuoIomz8R8IYyuU1Qew4P8=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pangu/4.0.7/pangu.min.js" integrity="sha256-j+yj56cdEY2CwkVtGyz18fNybFGpMGJ8JxG3GSyO2+I=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/9.4.3/mermaid.min.js","integrity":"sha256-e0o3JYsdjqKajf9eOe22FhioYSz9WofRY4dLKo3F6do="}}</script>
+  <script src="/js/third-party/tags/mermaid.js"></script>
+
+
+
+
+  
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/quicklink/2.3.0/quicklink.umd.js" integrity="sha256-yvJQOINiH9fWemHn0vCA5lsHWJaHs6/ZmO+1Ft04SvM=" crossorigin="anonymous"></script>
+  <script class="next-config" data-name="quicklink" type="application/json">{"enable":true,"home":true,"archive":true,"delay":true,"timeout":3000,"priority":true,"url":"http://example.com/2019/08/21/network/kubernetes-network-problem/"}</script>
+  <script src="/js/third-party/quicklink.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/gitalk/1.8.0/gitalk.css" integrity="sha256-AJnUHL7dBv6PGaeyPQJcgQPDjt/Hn/PvYZde1iqfp8U=" crossorigin="anonymous">
+
+<script class="next-config" data-name="gitalk" type="application/json">{"enable":true,"github_id":"champly","repo":"champly.github.io","client_id":"e73bf3d8d8c7947be9c2","client_secret":"25256fb151149009db7add5031c73f39a85f608c","admin_user":"champly","distraction_free_mode":true,"proxy":"https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token","language":"en","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/gitalk/1.8.0/gitalk.min.js","integrity":"sha256-MVK9MGD/XJaGyIghSVrONSnoXoGh3IFxLw0zfvzpxR4="},"path_md5":"5043c63ffc9602dd214d38f19d102240"}</script>
+<script src="/js/third-party/comments/gitalk.js"></script>
+
+
+  <script async src="/js/cursor/fireworks.js"></script>
+
+
+
+
+
+
+
+
+<style>
+	#bgCanvas {
+		background-color: rgba(255,255,255) !important;
+	}
+</style>
+<script type="text/javascript" size="150" alpha="0.6" zindex="-2" src="/js/bg/ribbon.min.js"></script>
+
+
+</body>
+</html>
